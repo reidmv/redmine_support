@@ -1,0 +1,9 @@
+Din melding er mottatt av support systemet.
+Du har fått saksnummer <%= @trackid %>
+
+Vennligst ikke endre på subject hvis du sender svar på denne mailen ..
+Blablabla .. litt mer info ..
+
+mvh
+Trollweb Solutions AS
+support@trollweb.no 
