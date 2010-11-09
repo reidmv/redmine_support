@@ -10,11 +10,12 @@ require 'hooks'
 #  end
 #end
 
+SUPPORT_ROOT = "#{RAILS_ROOT}/vendor/plugins/support"
+SUPPORT_CONFIG = YAML.load_file("#{SUPPORT_ROOT}/config/support.yml")[RAILS_ENV]
 
-
-Redmine::Plugin.register :redmine_tw_support do
-  name 'Trollweb Support plugin'
-  author 'Kurt Inge Smådal'
-  description 'Support plugin for Trollweb'
-  version '0.0.1'
+Redmine::Plugin.register :support do
+  name 'Support plugin'
+  author 'Kurt Inge Småda / Reid Vandewielel'
+  description 'Helpdesk & Support plugin'
+  version '0.0.2'
 end

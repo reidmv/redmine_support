@@ -1,0 +1,5 @@
+production:
+  support_mailhost: mailhost.cecs.pdx.edu
+  support_username: trollweb
+  support_password: mm#r9Mfw9t
+  support_imported: mail.imported
