@@ -1,5 +1,5 @@
 <fieldset>
-  <legend><%= l(:support_text_connection) %></legend>
+  <legend><%= l(:support_text_connection_settings) %></legend>
   <p><label><%= l(:support_text_mailhost) %></label>
     <%= text_field_tag 'settings[support_mailhost]', @settings['support_mailhost'] %><br />
   </p>
@@ -7,7 +7,7 @@
     <%= text_field_tag 'settings[support_username]', @settings['support_username'] %><br />
   </p>
   <p><label><%= l(:support_text_password) %></label>
-    <%= text_field_tag 'settings[support_password]', @settings['support_password'] %><br />
+    <%= password_field_tag 'settings[support_password]', @settings['support_password'] %><br />
   </p>
   <p><label><%= l(:support_text_importdir) %></label>
     <%= text_field_tag 'settings[support_importdir]', @settings['support_importdir'] %><br />
@@ -18,7 +18,7 @@
 </fieldset>
 
 <fieldset>
-  <legend><%= l(:support_text_project) %></legend>
+  <legend><%= l(:support_text_project_settings) %></legend>
   <p><label><%= l(:support_text_project) %></label>
     <%= text_field_tag 'settings[support_project]', @settings['support_project'] %><br />
   </p>

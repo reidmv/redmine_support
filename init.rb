@@ -15,7 +15,7 @@ Redmine::Plugin.register :support do
   author 'Kurt Inge Småda / Reid Vandewielel'
   description 'Helpdesk & Support plugin'
   version '0.0.2'
-  settings :partial => 'settings/settings',
+  settings :partial => 'settings/support_settings',
            :default => {'support_mailhost'   => 'mail.host.com',
                         'support_username'   => 'user',
                         'support_password'   => 'pass',
