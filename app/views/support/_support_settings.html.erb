@@ -1,0 +1,28 @@
+<fieldset>
+  <legend><%= l(:support_text_connection) %></legend>
+  <p><label><%= l(:support_text_mailhost) %></label>
+    <%= text_field_tag 'settings[support_mailhost]', @settings['support_mailhost'] %><br />
+  </p>
+  <p><label><%= l(:support_text_username) %></label>
+    <%= text_field_tag 'settings[support_username]', @settings['support_username'] %><br />
+  </p>
+  <p><label><%= l(:support_text_password) %></label>
+    <%= text_field_tag 'settings[support_password]', @settings['support_password'] %><br />
+  </p>
+  <p><label><%= l(:support_text_importdir) %></label>
+    <%= text_field_tag 'settings[support_importdir]', @settings['support_importdir'] %><br />
+  </p>
+  <p><label><%= l(:support_text_replyto) %></label>
+    <%= text_field_tag 'settings[support_replyto]', @settings['support_replyto'] %><br />
+  </p>
+</fieldset>
+
+<fieldset>
+  <legend><%= l(:support_text_project) %></legend>
+  <p><label><%= l(:support_text_project) %></label>
+    <%= text_field_tag 'settings[support_project]', @settings['support_project'] %><br />
+  </p>
+  <p><label><%= l(:support_text_tracker) %></label>
+    <%= text_field_tag 'settings[support_tracker]', @settings['support_tracker'] %><br />
+  </p>
+</fieldset>

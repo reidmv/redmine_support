@@ -17,7 +17,7 @@
 
 require 'net/imap'
 
-module Trollweb
+module Support
   module IMAP
     class << self
       def check(imap_options={}, options={})
