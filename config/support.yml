@@ -3,3 +3,4 @@ production:
   support_username: trollweb
   support_password: mm#r9Mfw9t
   support_imported: mail.imported
+  support_replyto:  trollweb@cat.pdx.edu

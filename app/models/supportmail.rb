@@ -44,7 +44,7 @@ class Supportmail < ActionMailer::Base
 
   # Mail issue_created
   def issue_created(tracker,track_subject)
-    from 'support@trollweb.no'
+    from SUPPORT_CONFIG['support_replyto']
     
     # Common headers
     headers 'X-Mailer' => 'Redmine',
@@ -62,7 +62,7 @@ class Supportmail < ActionMailer::Base
   
   # Mail issue_updated
   def issue_updated(issue,journal)
-    from 'support@trollweb.no'
+    from SUPPORT_CONFIG['support_replyto']
     
     # Common headers
     headers 'X-Mailer' => 'Redmine',

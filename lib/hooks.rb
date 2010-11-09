@@ -7,7 +7,7 @@ end
 
 # Hooks for some handy extra information within redmine
 #
-class TwSupportHooks < Redmine::Hook::Listener
+class SupportHooks < Redmine::Hook::Listener
 
   def view_issues_edit_notes_bottom(context={})
     issueid = context[:issue].id
