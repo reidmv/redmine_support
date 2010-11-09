@@ -19,8 +19,11 @@ Redmine::Plugin.register :support do
            :default => {'support_mailhost'   => 'mail.host.com',
                         'support_username'   => 'user',
                         'support_password'   => 'pass',
+                        'support_mailport'   => '993',
+                        'support_mailssl'    => 'true',
                         'support_import_dir' => 'mail.import',
                         'support_replyto'    => 'support@host.com',
                         'support_project'    => 'support',
-                        'support_tracker'    => 'support' }
+                        'support_tracker'    => 'support',
+                        'support_login_user' => 'support' }
 end

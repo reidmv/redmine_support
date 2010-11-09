@@ -9,6 +9,12 @@
   <p><label><%= l(:support_text_password) %></label>
     <%= password_field_tag 'settings[support_password]', @settings['support_password'] %><br />
   </p>
+  <p><label><%= l(:support_text_mailport) %></label>
+    <%= text_field_tag 'settings[support_mailport]', @settings['support_mailport'] %><br />
+  </p>
+  <p><label><%= l(:support_text_mailssl) %></label>
+    <%= text_field_tag 'settings[support_mailssl]', @settings['support_mailssl'] %><br />
+  </p>
   <p><label><%= l(:support_text_importdir) %></label>
     <%= text_field_tag 'settings[support_importdir]', @settings['support_importdir'] %><br />
   </p>
@@ -24,5 +30,8 @@
   </p>
   <p><label><%= l(:support_text_tracker) %></label>
     <%= text_field_tag 'settings[support_tracker]', @settings['support_tracker'] %><br />
+  </p>
+  <p><label><%= l(:support_text_login_user) %></label>
+    <%= text_field_tag 'settings[support_login_user]', @settings['support_login_user'] %><br />
   </p>
 </fieldset>

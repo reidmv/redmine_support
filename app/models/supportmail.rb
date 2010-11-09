@@ -86,9 +86,9 @@ class Supportmail < ActionMailer::Base
   end
   
   def create_issue(email,uid)
-    user = User.find(:first, :conditions => ["login=?", 'support']) 
+    user = User.find(:first, :conditions => ["login=?", @settings['support_login_user']]) 
     project = target_project
-    tracker = project.trackers.find_by_name('support') || project.trackers.find(:first)
+    tracker = project.trackers.find_by_name(@settings['support_tracker']) || project.trackers.find(:first)
     category = project.issue_categories.find(:first)
     priority = IssuePriority.find_by_name('normal')
     status =  IssueStatus.find_by_name('new')
@@ -161,7 +161,7 @@ class Supportmail < ActionMailer::Base
     # TODO: other ways to specify project:
     # * parse the email To field
     # * specific project (eg. Setting.mail_handler_target_project)
-    target = Project.find_by_identifier('support')
+    target = Project.find_by_identifier(@settings['support_project'])
     raise MissingInformation.new('Unable to determine target project') if target.nil?
     target
   end

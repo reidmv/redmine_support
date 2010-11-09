@@ -21,12 +21,12 @@ module Support
   module IMAP
     class << self
       def check(imap_options={}, options={})
-        host = imap_options[:host] || '127.0.0.1'
-        port = imap_options[:port] || '143'
-        ssl = !imap_options[:ssl].nil?
+        host = imap_options[:host] || @settings['support_mailhost']
+        port = imap_options[:port] || @settings['support_mailport']
+        ssl  = imap_options[:ssl]  || @settings['support_mailssl'] 
         folder = imap_options[:folder] || 'INBOX'
         
-        imap = Net::IMAP.new(host, port, ssl)        
+        imap = Net::IMAP.new(host, port, ssl)
         imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
         imap.select(folder)
         imap.search(['NOT', 'SEEN']).each do |message_id|
@@ -35,7 +35,7 @@ module Support
           if Supportmail.receive(msg)
             logger.debug "Message #{message_id} successfully received" if logger && logger.debug?
             if imap_options[:move_on_success]
-              imap.copy(message_id, imap_options[:move_on_success])
+              imap.copy(message_id, @settings['support_importdir'])
             end
             imap.store(message_id, "+FLAGS", [:Seen, :Deleted])
           else
