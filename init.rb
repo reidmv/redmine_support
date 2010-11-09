@@ -10,8 +10,8 @@ require 'hooks'
 #  end
 #end
 
-SUPPORT_ROOT = "#{RAILS_ROOT}/vendor/plugins/support"
-SUPPORT_CONFIG = YAML.load_file("#{SUPPORT_ROOT}/config/support.yml")[RAILS_ENV]
+::SUPPORT_ROOT = "#{RAILS_ROOT}/vendor/plugins/support"
+::SUPPORT_CONFIG = YAML.load_file("#{SUPPORT_ROOT}/config/support.yml")[RAILS_ENV]
 
 Redmine::Plugin.register :support do
   name 'Support plugin'
