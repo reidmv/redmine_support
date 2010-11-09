@@ -10,12 +10,17 @@ require 'hooks'
 #  end
 #end
 
-::SUPPORT_ROOT = "#{RAILS_ROOT}/vendor/plugins/support"
-::SUPPORT_CONFIG = YAML.load_file("#{SUPPORT_ROOT}/config/support.yml")[RAILS_ENV]
-
 Redmine::Plugin.register :support do
   name 'Support plugin'
   author 'Kurt Inge Småda / Reid Vandewielel'
   description 'Helpdesk & Support plugin'
   version '0.0.2'
+  settings :partial => 'settings/settings',
+           :default => {'mailhost'   => 'mail.host.com',
+                        'username'   => 'user',
+                        'password'   => 'pass',
+                        'import_dir' => 'mail.import',
+                        'replyto'    => 'support@host.com',
+                        'project'    => 'support',
+                        'tracker'    => 'support' }
 end
