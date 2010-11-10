@@ -57,6 +57,7 @@ class Supportmail < ActionMailer::Base
             'Auto-Submitted' => 'auto-generated'
   
     recipients tracker.email
+    cc tracker.cc unless tracker.cc.nil?
     subject track_subject
     body :trackid => tracker.trackid
     content_type "text/plain"
@@ -78,6 +79,7 @@ class Supportmail < ActionMailer::Base
     tracker = Support.getByIssueId(issue.id);
     
     recipients tracker.email
+    cc tracker.cc unless tracker.cc.nil?
     subject "RE: " + build_subject(tracker.trackid,issue.subject)
     body :trackid => tracker.trackid,
          :status => issue.status,
