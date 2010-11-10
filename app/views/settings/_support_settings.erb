@@ -13,7 +13,7 @@
     <%= text_field_tag 'settings[mailport]', @settings['mailport'] %><br />
   </p>
   <p><label><%= l(:support_text_mailssl) %></label>
-    <%= text_field_tag 'settings[mailssl]', @settings['mailssl'] %><br />
+    <input id="settings_mailssl" name="settings[mailssl]" type="checkbox" value="true" <%= "checked" unless @settings['mailssl'].nil? %> /><br /> 
   </p>
   <p><label><%= l(:support_text_imported_dir) %></label>
     <%= text_field_tag 'settings[imported_dir]', @settings['imported_dir'] %><br />

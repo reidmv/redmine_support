@@ -28,7 +28,7 @@ module SupportPlugin
         username     = imap_options[:username] || @settings[:username]
         password     = imap_options[:password] || @settings[:password]
         port         = imap_options[:port]     || @settings[:mailport]
-        ssl          = imap_options[:ssl]      || @settings[:mailssl]
+        ssl          = imap_options[:ssl]      || !@settings[:mailssl].nil?
         imported_dir = imap_options[:imported] || @settings[:imported_dir]
         import_dir   = imap_options[:import]   || 'INBOX'
         
