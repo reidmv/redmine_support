@@ -35,7 +35,7 @@ class SupportHooks < Redmine::Hook::Listener
 
     if context[:params]['support_sendmail'] = "doSend" 
       support = Support.find_by_issueid(issueid)
-      unless support.nil? do
+      unless support.nil?
         support.cc    = context[:params]['support_cc'] unless context[:params]['support_cc'].nil? 	
         support.email = context[:params]['support_to'] unless context[:params]['support_to'].nil? 	
         support.save
