@@ -15,3 +15,5 @@ en:
   support_text_project: "Support Project"
   support_text_tracker: "Support Issue Tracker"
   support_text_login_user: "Support Login User"
+  support_text_email_to: "To:"
+  support_text_email_cc: "CC:"

@@ -15,7 +15,7 @@ class SupportHooks < Redmine::Hook::Listener
     
     if Support.isSupportIssue(issueid)
       tracker = Support.getByIssueId(issueid)
-      get_action_view.render(:partial => "issue_edit", :locals => {:email => tracker.email});
+      get_action_view.render(:partial => "issue_edit", :locals => {:email => tracker.email, :cc => tracker.cc });
     end
   end
 

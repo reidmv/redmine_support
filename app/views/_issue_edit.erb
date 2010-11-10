@@ -1,3 +1,9 @@
     <fieldset><legend>Support issue</legend>
-    <%=  check_box_tag 'support_sendmail', "doSend", true %> Send copy of this update to client (<%= email %>)
+    <%=  check_box_tag 'support_sendmail', "doSend", true %> Send copy of this update to client
+    <p><label><%= "To:" %></label>
+      <%= text_field_tag 'support_to', email, {:size => 60} %><br />
+    </p>
+    <p><label><%= "CC:" %></label>
+      <%= text_field_tag 'support_cc', cc, {:size => 60 } %><br />
+    </p>
     </fieldset>
