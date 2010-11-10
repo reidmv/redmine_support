@@ -15,27 +15,34 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+require 'redmine'
 require 'net/imap'
 
-module Support
+module SupportPlugin
   module IMAP
     class << self
       def check(imap_options={}, options={})
-        host = imap_options[:host] || @settings['support_mailhost']
-        port = imap_options[:port] || @settings['support_mailport']
-        ssl  = imap_options[:ssl]  || @settings['support_mailssl'] 
-        folder = imap_options[:folder] || 'INBOX'
+        @settings = Setting[:plugin_support]
+
+        host         = imap_options[:host]     || @settings[:mailhost]
+        username     = imap_options[:username] || @settings[:username]
+        password     = imap_options[:password] || @settings[:password]
+        port         = imap_options[:port]     || @settings[:mailport]
+        ssl          = imap_options[:ssl]      || @settings[:mailssl]
+        imported_dir = imap_options[:imported] || @settings[:imported_dir]
+        import_dir   = imap_options[:import]   || 'INBOX'
         
+        #imap = Net::IMAP.new(host, port, ssl)
         imap = Net::IMAP.new(host, port, ssl)
-        imap.login(imap_options[:username], imap_options[:password]) unless imap_options[:username].nil?
-        imap.select(folder)
+        imap.login(username, password) unless username.nil?
+        imap.select(import_dir)
         imap.search(['NOT', 'SEEN']).each do |message_id|
           msg = imap.fetch(message_id,'RFC822')[0].attr['RFC822']
           logger.debug "Receiving message #{message_id}\n"  if logger && logger.debug?
           if Supportmail.receive(msg)
             logger.debug "Message #{message_id} successfully received" if logger && logger.debug?
-            if imap_options[:move_on_success]
-              imap.copy(message_id, @settings['support_importdir'])
+            if imported_dir
+              imap.copy(message_id, imported_dir)
             end
             imap.store(message_id, "+FLAGS", [:Seen, :Deleted])
           else
@@ -47,6 +54,7 @@ module Support
             end
           end
         end
+        debugger
         imap.expunge
       end
       

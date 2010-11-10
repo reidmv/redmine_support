@@ -1,37 +1,37 @@
 <fieldset>
   <legend><%= l(:support_text_connection_settings) %></legend>
   <p><label><%= l(:support_text_mailhost) %></label>
-    <%= text_field_tag 'settings[support_mailhost]', @settings['support_mailhost'] %><br />
+    <%= text_field_tag 'settings[mailhost]', @settings['mailhost'] %><br />
   </p>
   <p><label><%= l(:support_text_username) %></label>
-    <%= text_field_tag 'settings[support_username]', @settings['support_username'] %><br />
+    <%= text_field_tag 'settings[username]', @settings['username'] %><br />
   </p>
   <p><label><%= l(:support_text_password) %></label>
-    <%= password_field_tag 'settings[support_password]', @settings['support_password'] %><br />
+    <%= password_field_tag 'settings[password]', @settings['password'] %><br />
   </p>
   <p><label><%= l(:support_text_mailport) %></label>
-    <%= text_field_tag 'settings[support_mailport]', @settings['support_mailport'] %><br />
+    <%= text_field_tag 'settings[mailport]', @settings['mailport'] %><br />
   </p>
   <p><label><%= l(:support_text_mailssl) %></label>
-    <%= text_field_tag 'settings[support_mailssl]', @settings['support_mailssl'] %><br />
+    <%= text_field_tag 'settings[mailssl]', @settings['mailssl'] %><br />
   </p>
-  <p><label><%= l(:support_text_importdir) %></label>
-    <%= text_field_tag 'settings[support_importdir]', @settings['support_importdir'] %><br />
+  <p><label><%= l(:support_text_imported_dir) %></label>
+    <%= text_field_tag 'settings[imported_dir]', @settings['imported_dir'] %><br />
   </p>
   <p><label><%= l(:support_text_replyto) %></label>
-    <%= text_field_tag 'settings[support_replyto]', @settings['support_replyto'] %><br />
+    <%= text_field_tag 'settings[replyto]', @settings['replyto'] %><br />
   </p>
 </fieldset>
 
 <fieldset>
   <legend><%= l(:support_text_project_settings) %></legend>
   <p><label><%= l(:support_text_project) %></label>
-    <%= text_field_tag 'settings[support_project]', @settings['support_project'] %><br />
+    <%= text_field_tag 'settings[project]', @settings['project'] %><br />
   </p>
   <p><label><%= l(:support_text_tracker) %></label>
-    <%= text_field_tag 'settings[support_tracker]', @settings['support_tracker'] %><br />
+    <%= text_field_tag 'settings[tracker]', @settings['tracker'] %><br />
   </p>
   <p><label><%= l(:support_text_login_user) %></label>
-    <%= text_field_tag 'settings[support_login_user]', @settings['support_login_user'] %><br />
+    <%= text_field_tag 'settings[login_user]', @settings['login_user'] %><br />
   </p>
 </fieldset>

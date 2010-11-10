@@ -1,5 +1,7 @@
 #/usr/local/bin/rake -f 
 
+LOCKFILE=/var/www/redmine/vendor/plugins/support/lockfile
+
 if [ -f $LOCKFILE ]; then
   echo " Lockfile exists, goodbye.."
   exit 1;
@@ -8,13 +10,10 @@ fi
 touch $LOCKFILE
 
 
-/usr/local/bin/rake -f /path/to/redmine/Rakefile \
+/usr/bin/rake -f /var/www/redmine/Rakefile \
   tw_support:email:receive_imap \
-  RAILS_ENV="production" \
-  host=mail.host.com \
-  username=mail_username \
-  password=mail_password \
-  move_on_success=INBOX.imported
+  RAILS_ENV=production \
+  --trace
 
 rm $LOCKFILE
 

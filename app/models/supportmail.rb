@@ -3,6 +3,7 @@ class Supportmail < ActionMailer::Base
   SUBJECT_MATCH = %r{\[TW-#([A-Z]+[0-9]+)\]}
 
   def receive(email)
+    @settings ||= Setting[:plugin_support]
     sender = email.from.to_a.first.to_s.strip
     subject = email.subject
     message = cleanup_body(plain_text_body(email))
@@ -32,6 +33,7 @@ class Supportmail < ActionMailer::Base
       newtracker.save!
       
       # Send mail to user
+      debugger
       mailstatus = Supportmail.deliver_issue_created(newtracker, build_subject(uid,subject))
     else
       ## Append to an old one.
@@ -44,7 +46,8 @@ class Supportmail < ActionMailer::Base
 
   # Mail issue_created
   def issue_created(tracker,track_subject)
-    from @settings['support_replyto']
+    @settings ||= Setting[:plugin_support]
+    from @settings['replyto']
     
     # Common headers
     headers 'X-Mailer' => 'Redmine',
@@ -62,7 +65,8 @@ class Supportmail < ActionMailer::Base
   
   # Mail issue_updated
   def issue_updated(issue,journal)
-    from @settings['support_replyto']
+    @settings ||= Setting[:plugin_support]
+    from @settings['replyto']
     
     # Common headers
     headers 'X-Mailer' => 'Redmine',
@@ -85,10 +89,11 @@ class Supportmail < ActionMailer::Base
     
   end
   
-  def create_issue(email,uid)
-    user = User.find(:first, :conditions => ["login=?", @settings['support_login_user']]) 
+  def create_issue(email,uid) 
+    @settings ||= Setting[:plugin_support]
+    user = User.find(:first, :conditions => ["login=?", @settings['login_user']]) 
     project = target_project
-    tracker = project.trackers.find_by_name(@settings['support_tracker']) || project.trackers.find(:first)
+    tracker = project.trackers.find_by_name(@settings['tracker']) || project.trackers.find(:first)
     category = project.issue_categories.find(:first)
     priority = IssuePriority.find_by_name('normal')
     status =  IssueStatus.find_by_name('new')
@@ -158,10 +163,11 @@ class Supportmail < ActionMailer::Base
   
   
   def target_project
+    @settings ||= Setting[:plugin_support]
     # TODO: other ways to specify project:
     # * parse the email To field
     # * specific project (eg. Setting.mail_handler_target_project)
-    target = Project.find_by_identifier(@settings['support_project'])
+    target = Project.find_by_identifier(@settings['project'])
     raise MissingInformation.new('Unable to determine target project') if target.nil?
     target
   end

@@ -10,7 +10,7 @@ namespace :tw_support do
                 :move_on_success => ENV['move_on_success'],
                 :move_on_failure => ENV['move_on_failure']}
 
-      Trollweb::IMAP.check(imap_options)
+      SupportPlugin::IMAP.check(imap_options)
     end
   end
 end

@@ -16,14 +16,14 @@ Redmine::Plugin.register :support do
   description 'Helpdesk & Support plugin'
   version '0.0.2'
   settings :partial => 'settings/support_settings',
-           :default => {'support_mailhost'   => 'mail.host.com',
-                        'support_username'   => 'user',
-                        'support_password'   => 'pass',
-                        'support_mailport'   => '993',
-                        'support_mailssl'    => 'true',
-                        'support_import_dir' => 'mail.import',
-                        'support_replyto'    => 'support@host.com',
-                        'support_project'    => 'support',
-                        'support_tracker'    => 'support',
-                        'support_login_user' => 'support' }
+           :default => {'mailhost'     => 'mail.host.com',
+                        'username'     => 'user',
+                        'password'     => 'pass',
+                        'mailport'     => '993',
+                        'mailssl'      => 'true',
+                        'imported_dir' => 'mail.import',
+                        'replyto'      => 'support@host.com',
+                        'project'      => 'support',
+                        'tracker'      => 'support',
+                        'login_user'   => 'support' }
 end
