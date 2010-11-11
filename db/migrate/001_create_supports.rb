@@ -7,8 +7,10 @@ class CreateSupports < ActiveRecord::Migration
       t.column :cc, :string
       t.column :name, :string
       t.column :issueid, :integer 
+      t.column :original_mail_headers, :text
     end
     add_index  :supports, :trackid, :unique => true
+    add_index  :supports, :issueid, :unique => true
   end
 
   def self.down

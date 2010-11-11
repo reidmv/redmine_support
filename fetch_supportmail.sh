@@ -12,8 +12,7 @@ touch $LOCKFILE
 
 /usr/bin/rake -f /var/www/redmine/Rakefile \
   tw_support:email:receive_imap \
-  RAILS_ENV=production \
-  --trace
+  RAILS_ENV=production
 
 rm $LOCKFILE
 

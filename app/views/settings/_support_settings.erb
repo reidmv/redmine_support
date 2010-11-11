@@ -35,3 +35,13 @@
     <%= text_field_tag 'settings[login_user]', @settings['login_user'] %><br />
   </p>
 </fieldset>
+
+<fieldset>
+  <legend><%= l(:support_text_project_preferences) %></legend>
+  <p><label><%= l(:support_text_homedir_path) %></label>
+    <%= text_field_tag 'settings[homedir_path]', @settings['homedir_path'] %><br />
+  </p>
+  <p><label><%= l(:support_text_signature_file) %></label>
+    <%= text_field_tag 'settings[signature_file]', @settings['signature_file'] %><br />
+  </p>
+</fieldset>
