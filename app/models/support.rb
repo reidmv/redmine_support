@@ -1,7 +1,6 @@
 class Support < ActiveRecord::Base
-  
-  
 
+  serialize :original_mail_headers  
   
 #  def self.getIssueid(trackid)
 #    row = find(:id => trackid)

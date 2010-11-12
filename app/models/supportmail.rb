@@ -29,11 +29,13 @@ class Supportmail < ActionMailer::Base
      
       issue = create_issue(email,uid)
       
-      newtracker = Support.new(:trackid => uid, :email => sender, :issueid => issue.id)
+      newtracker = Support.new(:trackid => uid, 
+                               :email => sender, 
+                               :issueid => issue.id,
+                               :original_mail_header => save_headers(email))
       newtracker.save!
       
       # Send mail to user
-      debugger
       mailstatus = Supportmail.deliver_issue_created(newtracker, build_subject(uid,subject))
     else
       ## Append to an old one.
@@ -138,8 +140,16 @@ class Supportmail < ActionMailer::Base
     #  raise UnauthorizedAction unless status.nil? || user.allowed_to?(:edit_issues, issue.project)
     #end
 
-    # add the note
+    # add the note as a journal entry
     journal = issue.init_journal(user, cleanup_body(plain_text_body(email)))
+
+    # save the mail headers in the journal entry
+    header = {}
+    header['from'] = email.from_addrs.to_s
+    header['to']   = email.to_addrs.to_s
+    journal.mail_header = save_headers(email)
+    journal.save
+
     add_attachments(issue,email,user)
     # check workflow
     if status && issue.new_statuses_allowed_to(user).include?(status)
@@ -149,8 +159,6 @@ class Supportmail < ActionMailer::Base
     logger.info "MailHandler: issue ##{issue.id} updated by #{user}" if logger && logger.info
     journal
   end
-  
-  
   
   def add_attachments(obj,email,user)
     if email.has_attachments?
@@ -162,7 +170,6 @@ class Supportmail < ActionMailer::Base
       end
     end
   end
-  
   
   def target_project
     @settings ||= Setting[:plugin_support]
@@ -227,5 +234,11 @@ class Supportmail < ActionMailer::Base
     return (0..2).map{ ('A'..'Z').to_a[rand(26)] }.join + (0..2).map{ ('0'..'9').to_a[rand(10)] }.join
   end
 
+  def save_headers(email)
+    header = {}
+    header['from'] = email.from_addrs.to_s
+    header['to']   = email.to_addrs.to_s
+    return header
+  end
     
 end

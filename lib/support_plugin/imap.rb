@@ -54,7 +54,6 @@ module SupportPlugin
             end
           end
         end
-        debugger
         imap.expunge
       end
       

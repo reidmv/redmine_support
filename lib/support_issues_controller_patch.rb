@@ -23,16 +23,25 @@ module SupportIssuesControllerPatch
     # signature into the reply field. 
     def reply_signature
       journal = Journal.find(params[:journal_id]) if params[:journal_id]
-      if journal
-        user = journal.user
-        text = journal.notes
-      else
+      begin
+        if journal
+          user = journal.mail_header['from']
+          text = journal.notes
+          date = journal.created_on
+        elsif Support.getByIssueId(@issue.id);
+          user = Support.getByIssueId(@issue.id).original_mail_header['from']
+          text = @issue.description
+          date = @issue.created_on
+        end
+      rescue NoMethodError
         user = @issue.author
         text = @issue.description
+        date = @issue.created_on
       end
       # Replaces pre blocks with [...]
+      date = date.to_s(:db)
       text = text.to_s.strip.gsub(%r{<pre>((.|\s)*?)</pre>}m, '[...]')
-      content = "#{ll(Setting.default_language, :text_user_wrote, user)}\n> "
+      content =  "On #{date}, #{ll(Setting.default_language, :text_user_wrote, user)}\n> "
       content << text.gsub(/(\r?\n|\r\n?)/, "\n> ") + "\n\n"
 
       # insert a signature, if is support issue and exists
