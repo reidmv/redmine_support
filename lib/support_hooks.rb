@@ -10,18 +10,18 @@ end
 class SupportHooks < Redmine::Hook::Listener
 
   def view_issues_edit_notes_bottom(context={})
-    issueid = context[:issue].id
+    issue   = context[:issue]
+    support = Support.getByIssueId(issue.id)
     
-    
-    if Support.isSupportIssue(issueid)
-      tracker = Support.getByIssueId(issueid)
-      get_action_view.render(:partial => "issue_edit", :locals => {:email => tracker.email, :cc => tracker.cc });
+    if not support.nil?
+      to = support.original_mail_header['from']
+      cc = support.original_mail_header['cc']
+      get_action_view.render(:partial => "issue_edit", :locals => {:to => to, :cc => cc});
     end
   end
 
   def view_issues_show_details_bottom(context={})
     issueid = context[:issue].id
-    
     
     if Support.isSupportIssue(issueid)
       tracker = Support.getByIssueId(issueid)
@@ -29,23 +29,16 @@ class SupportHooks < Redmine::Hook::Listener
     end    
   end
 
-
   def controller_issues_edit_after_save(context={})
-    issueid = context[:issue].id
-
-    if context[:params]['support_sendmail'] = "doSend" 
-      support = Support.find_by_issueid(issueid)
-      unless support.nil?
-        support.email = context[:params]['support_to'] unless context[:params]['support_to'].nil? 	
-        support.cc    = context[:params]['support_cc']
-        support.save
-        mailstatus = Supportmail.deliver_issue_updated(context[:issue],context[:journal])
-      end
+    if context[:params]['support_sendmail'] == "doSend" 
+      header = {}
+      header['to']   = context[:params]['support_to']
+      header['cc']   = context[:params]['support_cc']
+      header['from'] = Setting[:plugin_support][:replyto]
+      mailstatus = Supportmail.deliver_issue_updated(context[:issue], context[:journal], header)
     else
       #TODO: add something when you don't send a mail to the user.
     end
-    
   end
-  
 
 end

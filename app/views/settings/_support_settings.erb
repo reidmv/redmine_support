@@ -21,6 +21,9 @@
   <p><label><%= l(:support_text_replyto) %></label>
     <%= text_field_tag 'settings[replyto]', @settings['replyto'] %><br />
   </p>
+  <p><label><%= l(:support_text_mail_header) %></label>
+    <%= text_field_tag 'settings[mail_header]', @settings['mail_header'] %><br />
+  </p>
 </fieldset>
 
 <fieldset>
@@ -37,11 +40,14 @@
 </fieldset>
 
 <fieldset>
-  <legend><%= l(:support_text_project_preferences) %></legend>
+  <legend><%= l(:support_text_preferences) %></legend>
   <p><label><%= l(:support_text_homedir_path) %></label>
     <%= text_field_tag 'settings[homedir_path]', @settings['homedir_path'] %><br />
   </p>
   <p><label><%= l(:support_text_signature_file) %></label>
     <%= text_field_tag 'settings[signature_file]', @settings['signature_file'] %><br />
+  </p>
+  <p><label><%= l(:support_text_auto_newreply) %></label>
+    <input id="settings_auto_newreply" name="settings[auto_newreply]" type="checkbox" value="true" <%= "checked" unless @settings['auto_newreply'].nil? %> /><br /> 
   </p>
 </fieldset>

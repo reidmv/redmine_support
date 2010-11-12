@@ -36,7 +36,7 @@ module SupportPlugin
         imap = Net::IMAP.new(host, port, ssl)
         imap.login(username, password) unless username.nil?
         imap.select(import_dir)
-        imap.search(['NOT', 'SEEN']).each do |message_id|
+        imap.sort(['ARRIVAL'], ['NOT', 'SEEN'], "US-ASCII").each do |message_id|
           msg = imap.fetch(message_id,'RFC822')[0].attr['RFC822']
           logger.debug "Receiving message #{message_id}\n"  if logger && logger.debug?
           if Supportmail.receive(msg)

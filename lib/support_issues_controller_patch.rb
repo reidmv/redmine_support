@@ -23,21 +23,27 @@ module SupportIssuesControllerPatch
     # signature into the reply field. 
     def reply_signature
       journal = Journal.find(params[:journal_id]) if params[:journal_id]
-      begin
-        if journal
-          user = journal.mail_header['from']
-          text = journal.notes
-          date = journal.created_on
-        elsif Support.getByIssueId(@issue.id);
-          user = Support.getByIssueId(@issue.id).original_mail_header['from']
-          text = @issue.description
-          date = @issue.created_on
-        end
-      rescue NoMethodError
-        user = @issue.author
+      support = Support.getByIssueId(@issue.id); 
+
+      # Things are different if it's a reply or a reply to a reply
+      if not journal.nil?
+        header = journal.mail_header
+        text = journal.notes
+        date = journal.created_on
+      elsif not support.nil?
+        header = support.original_mail_header
         text = @issue.description
         date = @issue.created_on
       end
+
+      # Set the potential recpients of email
+      unless header.nil?
+        user = header['from']
+        cc   = header['cc']
+      else
+        user = cc = nil
+      end
+
       # Replaces pre blocks with [...]
       date = date.to_s(:db)
       text = text.to_s.strip.gsub(%r{<pre>((.|\s)*?)</pre>}m, '[...]')
@@ -48,18 +54,20 @@ module SupportIssuesControllerPatch
       @settings = Setting[:plugin_support]
       homedir_path   = @settings[:homedir_path]
       signature_file = @settings[:signature_file]
-      unless homedir_path.empty? || signature_file.empty?
-        begin
-          sigfile = File.open("#{homedir_path}/#{User.current.login}/#{signature_file}", "rb")
-          content << "\n\n" + sigfile.read unless sigfile.nil?
-          sigfile.close
-        rescue SystemCallError
-          # we don't care if the file doesn't exist
+      begin
+        unless homedir_path.empty? || signature_file.empty?
+            sigfile = File.open("#{homedir_path}/#{User.current.login}/#{signature_file}", "rb")
+            content << "\n\n" + sigfile.read unless sigfile.nil?
+            sigfile.close
         end
+      rescue Exception
+        logger.info "IssuesController: unable to insert user signature" if logger && logger.info
       end
 
       render(:update) { |page|
         page.<< "$('notes').value = \"#{escape_javascript content}\";"
+        page.<< "$('support_to').value = \"#{escape_javascript user}\";"
+        page.<< "$('support_cc').value = \"#{escape_javascript cc}\";"
         page.show 'update'
         page << "Form.Element.focus('notes');"
         page << "Element.scrollTo('update');"

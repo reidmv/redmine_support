@@ -4,7 +4,6 @@ class CreateSupports < ActiveRecord::Migration
       t.column :id, :int
       t.column :trackid, :string
       t.column :email, :string
-      t.column :cc, :string
       t.column :name, :string
       t.column :issueid, :integer 
       t.column :original_mail_header, :text
