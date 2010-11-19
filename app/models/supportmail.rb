@@ -11,7 +11,7 @@ class Supportmail < ActionMailer::Base
     control = email.header[@settings[:mail_header].downcase].to_s
 
     # If this is a mail sent by the support system, we only want to track
-    # it's message-id; we don't want to duplicate the journal entry
+    # its message-id; we don't want to duplicate the journal entry
     if control && m = control.match(AUTORESPONSE_MATCH)
       save_message_id(email, m[1]).nil? unless !Issue.exists?(m[1])
       return true
