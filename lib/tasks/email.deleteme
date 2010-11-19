@@ -1,0 +1,84 @@
+Return-Path: <git@cat.pdx.edu>
+Received: from osiris.cat.pdx.edu (osiris.cat.pdx.edu [131.252.208.203])
+	by ehlo.cat.pdx.edu (8.14.2/8.14.2/Debian-2build1) with ESMTP id o3QKubIw003921
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-SHA bits=256 verify=NO)
+	for <masterofpuppets@cat.pdx.edu>; Mon, 26 Apr 2010 13:56:37 -0700
+Received: from osiris.cat.pdx.edu (localhost [127.0.0.1])
+	by osiris.cat.pdx.edu (8.14.3/8.14.3) with ESMTP id o3QKubJc058852
+	for <masterofpuppets@cat.pdx.edu>; Mon, 26 Apr 2010 13:56:37 -0700 (PDT)
+	(envelope-from git@osiris.cat.pdx.edu)
+Received: (from git@localhost)
+	by osiris.cat.pdx.edu (8.14.3/8.14.3/Submit) id o3QKub36058828;
+	Mon, 26 Apr 2010 13:56:37 -0700 (PDT)
+	(envelope-from git)
+Date: Mon, 26 Apr 2010 13:56:37 -0700 (PDT)
+From: gitosis user <git@cat.pdx.edu>
+Message-Id: <201004262056.o3QKub36058828@osiris.cat.pdx.edu>
+To: masterofpuppets@cat.pdx.edu
+Subject: [PUPPET COMMIT] CatPuppet branch, master, updated. c5b2e4ad51b65743370d465f228cc9ad5dad20a2
+X-Git-Refname: refs/heads/master
+X-Git-Reftype: branch
+X-Git-Oldrev: d6a0d2ec5199adfed3514009fd0df6c96f6edc31
+X-Git-Newrev: c5b2e4ad51b65743370d465f228cc9ad5dad20a2
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (ehlo.cat.pdx.edu [131.252.208.106]); Mon, 26 Apr 2010 13:56:37 -0700 (PDT)
+X-Spam-Status: No, score=-1.0 required=6.0 tests=WJAVA_2 autolearn=failed
+	version=3.2.5
+X-Spam-Checker-Version: SpamAssassin 3.2.5 (2008-06-10) on ehlo.cat.pdx.edu
+X-Virus-Scanned: clamav-milter 0.95.2 at ehlo.cat.pdx.edu
+X-Virus-Status: Clean
+
+This is an automated email from the git hooks/post-receive script. It was
+generated because a ref change was pushed to the repository containing
+the project "CatPuppet".
+
+The branch, master has been updated
+       via  c5b2e4ad51b65743370d465f228cc9ad5dad20a2 (commit)
+      from  d6a0d2ec5199adfed3514009fd0df6c96f6edc31 (commit)
+
+Those revisions listed above that are new to this repository have
+not appeared on any other notification email; so we list those
+revisions in full, below.
+
+- Log -----------------------------------------------------------------
+commit c5b2e4ad51b65743370d465f228cc9ad5dad20a2
+Author: Reid M Vandewiele <marut@osiris.cat.pdx.edu>
+Date:   Mon Apr 26 13:55:26 2010 -0700
+
+    Added distro-specific conf_dir declaration
+    
+    Different distros use different directories for their thunderbird. Lucid
+    names it after the version. Jaunty doesn't. wtf? What are symlinks for??
+
+diff --git a/modules/thunderbird/manifests/init.pp b/modules/thunderbird/manifests/init.pp
+index 9ec56d3..26fc327 100644
+--- a/modules/thunderbird/manifests/init.pp
++++ b/modules/thunderbird/manifests/init.pp
+@@ -8,7 +8,16 @@
+ #
+ 
+ class thunderbird {
+-  $conf_dir         = '/usr/lib/thunderbird-3.0.4'
++
++  ##
++  # Figure out what the files we need to edit are
++  #
++  case "$lsbdistid $lsbdistrelease" {
++    default:        { err ( "unknown lsbdistrelease ${lsbdistrelease}" ) }
++    'Ubuntu 10.04': { $conf_dir = '/usr/lib/thunderbird-3.0.4'           }
++    'Ubuntu 9.04':  { $conf_dir = '/usr/lib/thunderbird'                 }
++  }
++
+   $global_conf_file = "greprefs/all.js"
+   $custom_conf_file = "cat.cfg"
+ 
+
+-----------------------------------------------------------------------
+
+Summary of changes:
+ modules/thunderbird/manifests/init.pp |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+
+hooks/post-receive
+-- 
+CatPuppet

@@ -11,11 +11,5 @@ namespace :tw_support do
                 :move_on_failure => ENV['move_on_failure']}
       SupportPlugin::IMAP.check(imap_options)
     end
-    task :receive_raw do
-      ARGF.each do |input|
-        email = TMail::Mail.parse(input)
-        Supportmail.receive(email) unless email.nil?
-      end
-    end
   end
 end

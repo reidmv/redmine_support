@@ -16,22 +16,23 @@ require 'support_journal_patch'
 
 Redmine::Plugin.register :support do
   name 'Support plugin'
-  author 'Kurt Inge Småda / Reid Vandewielel'
+  author 'Kurt Inge Småda / Reid Vandewiel'
   description 'Helpdesk & Support plugin'
   version '0.0.2'
-  settings :partial => 'settings/support_settings',
-           :default => {'mailhost'       => 'mail.host.com',
-                        'username'       => 'user',
-                        'password'       => 'pass',
-                        'mailport'       => '993',
-                        'mail_header'    => 'X-TW',
-                        'mailssl'        => 'true',
-                        'auto_newreply'  => 'false',
-                        'imported_dir'   => 'mail.import',
-                        'replyto'        => 'support@host.com',
-                        'project'        => 'support',
-                        'tracker'        => 'support',
-                        'signature_file' => '.signature',
-                        'homedir_path'   => '/u',
-                        'login_user'     => 'support' }
+  settings :default => {
+    'api_key'        => 'secret',
+    'mail_header'    => 'X-TW',
+    'replyto'        => 'support@host.com',
+    'tracker'        => 'support',
+    'login_user'     => 'support',
+    'homedir_path'   => '/u',
+    'signature_file' => '.signature',
+    'auto_newreply'  => 'false',
+
+ }, :partial => 'settings/support_settings'
+
+  project_module :support do
+    permission :disable_support_cc, { :support => :index, :supportmail => :index }, :require => :member
+    permission :view_support_issue, { :supportmail => :index }, :require => :member
+  end
 end

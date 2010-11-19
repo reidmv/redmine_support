@@ -1,36 +1,18 @@
 <fieldset>
   <legend><%= l(:support_text_connection_settings) %></legend>
-  <p><label><%= l(:support_text_mailhost) %></label>
-    <%= text_field_tag 'settings[mailhost]', @settings['mailhost'] %><br />
-  </p>
-  <p><label><%= l(:support_text_username) %></label>
-    <%= text_field_tag 'settings[username]', @settings['username'] %><br />
-  </p>
-  <p><label><%= l(:support_text_password) %></label>
-    <%= password_field_tag 'settings[password]', @settings['password'] %><br />
-  </p>
-  <p><label><%= l(:support_text_mailport) %></label>
-    <%= text_field_tag 'settings[mailport]', @settings['mailport'] %><br />
-  </p>
-  <p><label><%= l(:support_text_mailssl) %></label>
-    <input id="settings_mailssl" name="settings[mailssl]" type="checkbox" value="true" <%= "checked" unless @settings['mailssl'].nil? %> /><br /> 
-  </p>
-  <p><label><%= l(:support_text_imported_dir) %></label>
-    <%= text_field_tag 'settings[imported_dir]', @settings['imported_dir'] %><br />
-  </p>
   <p><label><%= l(:support_text_replyto) %></label>
     <%= text_field_tag 'settings[replyto]', @settings['replyto'] %><br />
   </p>
   <p><label><%= l(:support_text_mail_header) %></label>
     <%= text_field_tag 'settings[mail_header]', @settings['mail_header'] %><br />
   </p>
+  <p><label><%= l(:support_text_api_key) %></label>
+    <%= text_field_tag 'settings[api_key]', @settings['api_key'] %><br />
+  </p>
 </fieldset>
 
 <fieldset>
   <legend><%= l(:support_text_project_settings) %></legend>
-  <p><label><%= l(:support_text_project) %></label>
-    <%= text_field_tag 'settings[project]', @settings['project'] %><br />
-  </p>
   <p><label><%= l(:support_text_tracker) %></label>
     <%= text_field_tag 'settings[tracker]', @settings['tracker'] %><br />
   </p>
