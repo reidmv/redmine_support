@@ -6,58 +6,40 @@ module SupportPatchMailer
   end
 
   module InstanceMethods
-    def issue_created(tracker, track_subject)
-      original_headers = tracker.original_mail_headers
+    def support_issue_created(issue)
+      settings = Setting['plugin_support']
+      original_header = Support.get_by_issueid(issue.id).original_mail_headers
 
-      from @settings['replyto']
-      
-      # Common headers
-      headers 'X-Mailer' => 'Redmine',
-              'X-Redmine-Host' => Setting.host_name,
-              'X-Redmine-Site' => 'Support System',
-              'Precedence' => 'bulk',
-              @settings[:mail_header] => "[AUTO-##{tracker.issueid}]"
-    
-      recipients tracker.email
-      if original_headers['cc'].nil? || original_headers['cc'].empty?
-        cc @settings['replyto'] 
-      else 
-        cc [ @settings['replyto'], oheaders['cc'] ]
-      end
-      subject track_subject
-      body :trackid => tracker.trackid
+      redmine_headers 'Project' => issue.project.identifier,
+                      'Issue-Id' => issue.id,
+                      'Issue-Author' => issue.author.login
+      redmine_headers 'Issue-Assignee' => issue.assigned_to.login if issue.assigned_to
+      message_id issue
+      recipients original_header['from']
+      cc [ original_header['cc'], settings['replyto'] ].flatten.compact
+      subject "Re: #{issue.subject}"
+      body :issue => issue
       content_type "text/plain"
-      body render(:file => "newissue.text.plain.rhtml", :body => body)
+      body render(:file => "support.newissue.text.plain.rhtml", :body => body, :layout => false)
     end
 
-    def issue_updated(issue, journal, header)
-      tracker = Support.getByIssueId(issue.id)
+    def support_issue_updated(journal)
+      debugger
+      settings = Setting['plugin_support']
+      issue    = Issue.find(journal.journalized_id)
+      header   = journal.mail_header
+      @updateJ = journal
 
-      # Update the headers in the journal entry
-      journal.mail_header = header
-      journal.save!
-
-      # Build the email
+      message_id journal
       recipients header['to']
-      from @settings['replyto']
-      if header['cc'].nil? || header['cc'].empty?
-        cc @settings['replyto'] 
-      else 
-        cc [ @settings['replyto'], header['cc'] ]
-      end
-      subject "RE: " + build_subject(tracker.trackid,issue.subject)
-      headers 'X-Mailer' => 'Redmine',
-              'X-Redmine-Host' => Setting.host_name,
-              'X-Redmine-Site' => 'Support System',
-              'Precedence' => 'bulk',
-              @settings[:mail_header] => "[AUTO-##{issue.id}]"
-      body :trackid => tracker.trackid,
-           :status => issue.status,
+      from settings['replyto']
+      cc [ header['cc'], settings['replyto'] ].flatten.compact
+      subject "RE: #{issue.subject}"
+      body :status => issue.status,
            :agent => journal.user,
            :message => journal.notes
       content_type "text/plain"
-
-      body render(:file => "updateissue.text.plain.rhtml", :body => body)
+      body render(:file => "support.updateissue.text.plain.rhtml", :body => body, :layout => false)
     end
   end
 end

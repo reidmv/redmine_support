@@ -80,66 +80,10 @@ class SupportMailHandler < ActionMailer::Base
     
     # Send auto-reply mail to user?
     if not @settings[:auto_newreply].nil?
-      mailstatus = SupportMailHandler.deliver_issue_created(newtracker, build_subject(uid, subject))
+      mailstatus = Mailer.deliver_support_issue_created(issue)
     end
 
     return true
-  end
-
-  # Mail issue_created
-  def issue_created(tracker, track_subject)
-    oheaders = tracker.original_mail_headers
-
-    from @settings['replyto']
-    
-    # Common headers
-    headers 'X-Mailer' => 'Redmine',
-            'X-Redmine-Host' => Setting.host_name,
-            'X-Redmine-Site' => 'Support System',
-            'Precedence' => 'bulk',
-            @settings[:mail_header] => "[AUTO-##{tracker.issueid}]"
-  
-    recipients tracker.email
-    if oheaders['cc'].nil? || oheaders['cc'].empty?
-      cc @settings['replyto'] 
-    else 
-      cc [ @settings['replyto'], oheaders['cc'] ]
-    end
-    subject track_subject
-    body :trackid => tracker.trackid
-    content_type "text/plain"
-    body render(:file => "newissue.text.plain.rhtml", :body => body)
-  end
-  
-  # Mail issue_updated
-  def issue_updated(issue, journal, header)
-    tracker = Support.getByIssueId(issue.id)
-
-    # Update the headers in the journal entry
-    journal.mail_header = header
-    journal.save!
-
-    # Build the email
-    recipients header['to']
-    from @settings['replyto']
-    if header['cc'].nil? || header['cc'].empty?
-      cc @settings['replyto'] 
-    else 
-      cc [ @settings['replyto'], header['cc'] ]
-    end
-    subject "RE: " + build_subject(tracker.trackid,issue.subject)
-    headers 'X-Mailer' => 'Redmine',
-            'X-Redmine-Host' => Setting.host_name,
-            'X-Redmine-Site' => 'Support System',
-            'Precedence' => 'bulk',
-            @settings[:mail_header] => "[AUTO-##{issue.id}]"
-    body :trackid => tracker.trackid,
-         :status => issue.status,
-         :agent => journal.user,
-         :message => journal.notes
-    content_type "text/plain"
-
-    body render(:file => "updateissue.text.plain.rhtml", :body => body)
   end
   
   def create_issue(email,uid) 

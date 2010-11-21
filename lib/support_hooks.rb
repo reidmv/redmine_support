@@ -30,15 +30,22 @@ class SupportHooks < Redmine::Hook::Listener
   end
 
   def controller_issues_edit_after_save(context={})
-    if context[:params]['support_sendmail'] == "doSend" 
+    if Support.isSupportIssue(context[:issue].id)
       header = {}
       header['to']   = context[:params]['support_to']
       header['cc']   = context[:params]['support_cc']
       header['from'] = Setting[:plugin_support][:replyto]
-      mailstatus = Supportmail.deliver_issue_updated(context[:issue], context[:journal], header)
-    else
-      #TODO: add something when you don't send a mail to the user.
+      context[:journal].mail_header = header
+      context[:journal].save!
+      if context[:params]['support_sendmail'] == "doSend" 
+        mailstatus = Mailer.deliver_support_issue_updated(context[:journal])
+      end
     end
+  end
+
+  def delivered_email(message)
+    debugger
+    "hello"
   end
 
 end
