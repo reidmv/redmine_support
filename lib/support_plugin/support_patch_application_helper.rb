@@ -1,6 +1,6 @@
 require_dependency 'application_helper'
 
-module SupportApplicationHelperPatch
+module SupportPatchApplicationHelper
   def self.included(base)
     base.send(:include, InstanceMethods)
  
@@ -52,4 +52,4 @@ module SupportApplicationHelperPatch
   end
 end
 
-ApplicationHelper.send(:include, SupportApplicationHelperPatch)
+ApplicationHelper.send(:include, SupportPatchApplicationHelper)

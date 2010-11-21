@@ -1,10 +1,10 @@
 require 'redmine'
 
 require 'support_hooks'
-require 'support_application_helper_patch'
-require 'support_issues_controller_patch'
-require 'support_journal_patch'
-require 'support_mail_handler_controller_patch'
+require 'support_plugin/support_patch_application_helper'
+require 'support_plugin/support_patch_issues_controller'
+require 'support_plugin/support_patch_journal'
+require 'support_plugin/support_patch_mail_handler_controller'
 
 #Dispatcher.to_prepare :tw_support do
 #  require_dependency 'issue'

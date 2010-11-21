@@ -38,20 +38,22 @@ class SupportMailHandler < ActionMailer::Base
     end
 
     # If this is a response to an already-tracked message, add it to the 
-    # appropriate issue.
+    # appropriate issue. If it's a duplicate, discard it.
     references = [email.in_reply_to, email.references].flatten.compact
-    if references.detect {|h| h.to_s =~ MESSAGE_ID_RE}
+    if not MessageId.find_by_message_id(email.message_id).nil?
+      # This message has already come through. already been processed.
+      logger.info "SupportMailHandler: duplicate submission for #{email.message_id}" if logger && logger.info
+      return false 
+    elsif references.detect {|h| h.to_s =~ MESSAGE_ID_RE}
       issue_id = $2.to_i
       receive_issue_reply(issue_id ,email)
       return true
     else
-      references.each do |reference|
-        related_message = MessageId.find(:first, :conditions => { :message_id => reference.to_s })
-        if not related_message.nil?
-          receive_issue_reply(related_message.issue_id ,email)
-          return true
-        end  
-      end
+      related_message = MessageId.find_by_message_id(references, :order => "id desc", :limit => 1)
+      if not related_message.nil?
+        receive_issue_reply(related_message.issue_id ,email)
+        return true
+      end  
     end
 
     # It's not an autoreponse, and we don't have a reference to it in our
@@ -271,7 +273,6 @@ class SupportMailHandler < ActionMailer::Base
   end
 
   def save_message_id(email, issue_id)
-    debugger
     message_id = MessageId.new(:message_id => email.header['message-id'].to_s, :issue_id => issue_id)
     message_id.save
     unless message_id.nil?

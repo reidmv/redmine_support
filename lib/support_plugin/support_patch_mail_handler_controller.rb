@@ -1,6 +1,6 @@
 require_dependency 'mail_handler_controller'
 
-module SupportMailHandlerControllerPatch
+module SupportPatchMailHandlerController
   def self.included(base)
     base.send(:include, InstanceMethods)
   end
@@ -18,4 +18,4 @@ module SupportMailHandlerControllerPatch
   end
 end
 
-MailHandlerController.send(:include, SupportMailHandlerControllerPatch)
+MailHandlerController.send(:include, SupportPatchMailHandlerController)

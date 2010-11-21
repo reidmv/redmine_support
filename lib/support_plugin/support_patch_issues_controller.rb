@@ -1,6 +1,6 @@
 require_dependency 'issues_controller'
 
-module SupportIssuesControllerPatch
+module SupportPatchIssuesController
   def self.included(base)
     base.send(:include, InstanceMethods)
  
@@ -77,4 +77,4 @@ module SupportIssuesControllerPatch
   end
 end
 
-IssuesController.send(:include, SupportIssuesControllerPatch)
+IssuesController.send(:include, SupportPatchIssuesController)

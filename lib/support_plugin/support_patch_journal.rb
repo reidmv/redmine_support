@@ -1,6 +1,6 @@
 require_dependency 'journal'
 
-module SupportJournalPatch
+module SupportPatchJournal
   def self.included(base)
     base.class_eval do
       serialize :mail_header, Hash
@@ -8,4 +8,4 @@ module SupportJournalPatch
   end
 end
 
-Journal.send(:include, SupportJournalPatch)
+Journal.send(:include, SupportPatchJournal)
