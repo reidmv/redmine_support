@@ -1,14 +1,34 @@
-class Supportmail < ActionMailer::Base
+class SupportMailHandler < ActionMailer::Base
 
+  class MissingInformation < StandardError; end
+
+  MESSAGE_ID_RE      = %r{^<redmine\.([a-z0-9_]+)\-(\d+)\.\d+@}
   SUBJECT_MATCH      = %r{\[TW-#([A-Z]+[0-9]+)\]}
   AUTORESPONSE_MATCH = %r{\[AUTO-#([0-9]+)\]}
 
+  attr_accessor :options
+  attr_accessor :project
+  attr_accessor :settings
+
+  def self.receive(raw_mail, options={})
+    logger.info "Received mail:\n #{raw_mail}" unless logger.nil?
+    mail = TMail::Mail.parse(raw_mail)
+    mail.base64_decode
+    handler = new
+    handler.options  = options
+    handler.project  = options['project']
+    handler.settings = Setting[:plugin_support]
+    handler.receive(mail)
+  end
+
   def receive(email)
-    @settings ||= Setting[:plugin_support]
-    sender =  email.from.to_a.first.to_s.strip
-    subject = email.subject
-    message = cleanup_body(plain_text_body(email))
     control = email.header[@settings[:mail_header].downcase].to_s
+  
+    # only receive the mail if the project has the support module enabled.
+    if not Project.find_by_identifier(@project).module_enabled?('support')
+      logger.error "SupportMailHandler: support module not enabled for #{@project}" if logger && logger.error
+      return false
+    end
 
     # If this is a mail sent by the support system, we only want to track
     # its message-id; we don't want to duplicate the journal entry
@@ -19,43 +39,53 @@ class Supportmail < ActionMailer::Base
 
     # If this is a response to an already-tracked message, add it to the 
     # appropriate issue.
-    in_reply_to = email.in_reply_to.nil? ? [] : email.in_reply_to 
-    references  = email.references.nil?  ? [] : email.references
-    all_references = in_reply_to + references
-    all_references.each do |reference|
-      related_message = MessageId.find_by_message_id(reference)
-      if not related_message.nil?
-        receive_issue_reply(related_message.issue_id ,email)
-        return true
-      end  
+    references = [email.in_reply_to, email.references].flatten.compact
+    if references.detect {|h| h.to_s =~ MESSAGE_ID_RE}
+      issue_id = $2.to_i
+      receive_issue_reply(issue_id ,email)
+      return true
+    else
+      references.each do |reference|
+        related_message = MessageId.find(:first, :conditions => { :message_id => reference.to_s })
+        if not related_message.nil?
+          receive_issue_reply(related_message.issue_id ,email)
+          return true
+        end  
+      end
     end
 
     # It's not an autoreponse, and we don't have a reference to it in our
     # database. make a new ticket. 
-    uid = genuid
-    while Support.find_by_trackid(uid)
-     uid = genuid
-    end
-   
-    issue = create_issue(email,uid)
-    newtracker = Support.new(:trackid => uid, 
-                             :email => sender, 
-                             :issueid => issue.id,
-                             :original_mail_header => save_headers(email))
+    return create_new_ticket email
+  end
+    
+  def create_new_ticket(email)
+    sender  = email.from.to_a.first.to_s.strip
+    subject = email.subject
+    message = cleanup_body(plain_text_body(email))
+    control = email.header[@settings[:mail_header].downcase].to_s
+    uid     = genuid
+
+    issue = create_issue(email, uid)
+    newtracker = Support.new(
+      :trackid => uid, 
+      :email   => sender, 
+      :issueid => issue.id,
+      :original_mail_header => save_headers(email)
+    )
     newtracker.save!
     message_id = save_message_id email, issue.id
     
     # Send auto-reply mail to user?
     if not @settings[:auto_newreply].nil?
-      mailstatus = Supportmail.deliver_issue_created(newtracker, build_subject(uid,subject))
+      mailstatus = SupportMailHandler.deliver_issue_created(newtracker, build_subject(uid, subject))
     end
 
     return true
   end
 
   # Mail issue_created
-  def issue_created(tracker,track_subject)
-    @settings ||= Setting[:plugin_support]
+  def issue_created(tracker, track_subject)
     oheaders = tracker.original_mail_headers
 
     from @settings['replyto']
@@ -81,7 +111,6 @@ class Supportmail < ActionMailer::Base
   
   # Mail issue_updated
   def issue_updated(issue, journal, header)
-    @settings ||= Setting[:plugin_support]
     tracker = Support.getByIssueId(issue.id)
 
     # Update the headers in the journal entry
@@ -112,37 +141,29 @@ class Supportmail < ActionMailer::Base
   end
   
   def create_issue(email,uid) 
-    @settings ||= Setting[:plugin_support]
-    user = User.find(:first, :conditions => ["login=?", @settings['login_user']]) 
-    project = target_project
-    tracker = project.trackers.find_by_name(@settings['tracker']) || project.trackers.find(:first)
+    user     = User.find(:first, :conditions => ["login=?", @settings['login_user']]) 
+    project  = target_project
+    tracker  = project.trackers.find_by_name(@settings['tracker']) || project.trackers.find(:first)
     category = project.issue_categories.find(:first)
     priority = IssuePriority.find_by_name('normal')
-    status =  IssueStatus.find_by_name('new')
+    status   = IssueStatus.find_by_name('new')
     
     issue = Issue.new(:author => user, :project => project, :tracker => tracker, :category => category, :priority => priority)
+
     # check workflow
     if status && issue.new_statuses_allowed_to(user).include?(status)
       issue.status = status
     end
     issue.subject = email.subject.chomp
-    if issue.subject.blank?
-      issue.subject = '(no subject)'
-    end
-    # custom fields
-    #issue.custom_field_values = issue.available_custom_fields.inject({}) do |h, c|
-    #  if value = get_keyword(c.name, :override => true)
-    #    h[c.id] = value
-    #  end
-    #  h
-    #end
-    issue.description = cleanup_body(plain_text_body(email)) + "\nTrackerID: " + uid
-    # add To and Cc as watchers before saving so the watchers can reply to Redmine
-    #add_watchers(issue)
+    if issue.subject.blank? then issue.subject = '(no subject)' end
+
+    issue.description = cleanup_body(plain_text_body(email))
     issue.save!
+
     add_attachments(issue,email,user)
     logger.info "MailHandler: issue ##{issue.id} created by #{user}" if logger && logger.info
-    issue
+
+    return issue
   end
   
   # Adds a note to an existing issue
@@ -179,44 +200,28 @@ class Supportmail < ActionMailer::Base
     journal
   end
   
-  def add_attachments(obj,email,user)
+  def add_attachments(obj, email, user)
     if email.has_attachments?
       email.attachments.each do |attachment|
-        Attachment.create(:container => obj,
-                          :file => attachment,
-                          :author => user,
-                          :content_type => attachment.content_type)
+        Attachment.create(
+          :container    => obj,
+          :file         => attachment,
+          :author       => user,
+          :content_type => attachment.content_type
+        )
       end
     end
   end
   
   def target_project
-    @settings ||= Setting[:plugin_support]
-    # TODO: other ways to specify project:
-    # * parse the email To field
-    # * specific project (eg. Setting.mail_handler_target_project)
-    target = Project.find_by_identifier(@settings['project'])
+    target = Project.find_by_identifier(@project)
     raise MissingInformation.new('Unable to determine target project') if target.nil?
     target
   end
   
-  
-  #  def self.newcase(email, name, issueid)
-  # 
-  #  uid = genuid
-  #  
-  #  while Support.find(:id => uid) do
-  #    uid = genuid
-  #  end
-  #  
-  #  create(:id => uid, :email => email, :name => name, :issueid => id)  
-  #  
-  #  return uid
-  #end
-
   # Returns the correct subjecttype
   def build_subject(uid, subject)
-    return "[TW-#" + uid + "] " + subject
+    return "Re: " + subject
   end
   
   # Returns the text/plain part of the email
@@ -250,18 +255,23 @@ class Supportmail < ActionMailer::Base
   end
   
   def genuid
-    return (0..2).map{ ('A'..'Z').to_a[rand(26)] }.join + (0..2).map{ ('0'..'9').to_a[rand(10)] }.join
+    uid = (0..2).map{ ('A'..'Z').to_a[rand(26)] }.join + (0..2).map{ ('0'..'9').to_a[rand(10)] }.join
+    while Support.find_by_trackid(uid)
+      uid = (0..2).map{ ('A'..'Z').to_a[rand(26)] }.join + (0..2).map{ ('0'..'9').to_a[rand(10)] }.join
+    end
+    return uid
   end
 
   def save_headers(email)
     header = {}
-    header['from'] = email.from_addrs.to_s
-    header['to']   = email.to_addrs.to_s
-    header['cc']   = email.cc_addrs.to_s
+    email.header.each do |key, value|
+      header[key] = value.to_s
+    end
     return header
   end
 
   def save_message_id(email, issue_id)
+    debugger
     message_id = MessageId.new(:message_id => email.header['message-id'].to_s, :issue_id => issue_id)
     message_id.save
     unless message_id.nil?
@@ -271,6 +281,5 @@ class Supportmail < ActionMailer::Base
     end
     return message_id
   end
-
 
 end
