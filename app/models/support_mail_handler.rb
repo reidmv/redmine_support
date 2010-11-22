@@ -5,8 +5,15 @@ class SupportMailHandler < ActionMailer::Base
   MESSAGE_ID_RE      = %r{^<redmine\.([a-z0-9_]+)\-(\d+)\.\d+\.\d+@}
   SUBJECT_MATCH      = %r{\[TW-#([A-Z]+[0-9]+)\]}
   AUTORESPONSE_MATCH = %r{\[AUTO-#([0-9]+)\]}
+  SUBJECT_X_MATCH    = %r{\[([^\[\]]+)\]}
 
-  attr_accessor :options
+  X_ISSUE_ID = /^\s*(\d+)($|\s+)/i
+  X_COMP     = /^\s*\d*\s*(CLOSE|RESOLVED|RESOLVE|RESOLV|CLOSED|COMP|COMPLETED|COMPLETE|DONE)($|\s+)/i
+  X_ASSIGN   = /^\s*\d*\s*RESP\s+([-a-zA-Z0-9_]+)($|\s+)/i
+  X_WATCH    = /^\s*\d*\s*GUARD\s+([-a-zA-Z0-9_]+)($|\s+)/i
+  X_FLAG     = /^\s*\d*\s*FLAGS\s+([A-Za-z0-9,]+)($|\s+)/i
+  X_IGNORE   = /^\s*\d*\s*IGNORE($|\s+)/i
+
   attr_accessor :project
   attr_accessor :settings
 
@@ -15,36 +22,50 @@ class SupportMailHandler < ActionMailer::Base
     mail = TMail::Mail.parse(raw_mail)
     mail.base64_decode
     handler = new
-    handler.options  = options
     handler.project  = options['project']
     handler.settings = Setting[:plugin_support]
     handler.receive(mail)
   end
 
   def receive(email)
-    debugger
-    control = email.header[@settings[:mail_header].downcase].to_s
-  
     # only receive the mail if the project has the support module enabled.
     if not Project.find_by_identifier(@project).module_enabled?('support')
       logger.error "SupportMailHandler: support module not enabled for #{@project}" if logger && logger.error
       return false
     end
-
-    # If this is a mail sent by the support system, we only want to track
-    # its message-id; we don't want to duplicate the journal entry
-    if control && m = control.match(AUTORESPONSE_MATCH)
-      save_message_id(email, m[1]).nil? unless !Issue.exists?(m[1])
-      return true
+  
+    # If this email has already been processed, discard it.
+    if not MessageId.find_by_message_id(email.message_id).nil?
+      logger.info "SupportMailHandler: duplicate submission for #{email.message_id}" if logger && logger.info
+      return false
+    end
+     
+    # Determine the issue id for the email
+    # Update that issue with this email
+    # Process any relevant control header directives
+    issue = determine_issue(email)
+    unless issue.nil?
+      update_support_issue(issue, email)
+      process_directives(issue, email)
     end
 
-    # If this is a response to an already-tracked message, add it to the 
-    # appropriate issue. If it's a duplicate, discard it.
-    references = [email.in_reply_to, email.references].flatten.compact
-    if not MessageId.find_by_message_id(email.message_id).nil?
-      # This message has already come through. already been processed.
-      logger.info "SupportMailHandler: duplicate submission for #{email.message_id}" if logger && logger.info
-      return false 
+    return !issue.nil?
+  end
+
+  def determine_issue(email)
+    @directives ||= get_directives(email)
+    references  = [email.in_reply_to, email.references].flatten.compact
+    
+    # If we are to ignore this email, do so.
+    # Else, if there's a directive specifying a valid ticket number, use it.
+    # Else, if there's a formatted message-id, use that to determine the issue
+    # Else, try and use the referenced messages to determine the issue
+    # Else, throw in the towel and create a new issue.
+    if @directives.detect { |d| d.to_s =~ X_IGNORE }
+      issue = nil
+    elsif @directives.detect { |d| d.to_s =~ X_ISSUE_ID }
+      issue_id = $1
+      issue = Issue.find(issue_id)
     elsif references.detect {|h| h.to_s =~ MESSAGE_ID_RE}
       object_class, object_id = $1, $2.to_i
       issue_id = case object_class
@@ -52,29 +73,71 @@ class SupportMailHandler < ActionMailer::Base
         when 'issue'   then object_id
         else nil
       end
-      receive_issue_reply(issue_id, email)
-      return true
+      issue = Issue.find(issue_id)
+    elsif not (related_message = MessageId.find_by_message_id(references, :order => "id desc", :limit => 1)).nil?
+      issue = Issue.find(related_message.issue_id)
     else
-      related_message = MessageId.find_by_message_id(references, :order => "id desc", :limit => 1)
-      if not related_message.nil?
-        receive_issue_reply(related_message.issue_id ,email)
-        return true
-      end  
+      issue = create_new_support_issue(email)
     end
 
-    # It's not an autoreponse, and we don't have a reference to it in our
-    # database. make a new ticket. 
-    return create_new_ticket email
+    # one way or another, at this point we should have an issue.
+    return issue
+  end
+
+  def process_directives(issue, email)
+    @settings   ||= get_settings
+    @directives ||= get_directives(email)
+    return @directives unless not @directives.empty?
+
+    # X_FLAG
+    if @directives.detect { |d| d.to_s =~ X_FLAG }
+      flags = $1.upcase
+      custom_field = CustomField.find_by_name(@settings['tags_field'])
+      if issue.available_custom_fields.include?(custom_field)
+        issue.custom_field_values = { custom_field.id => flags }
+        issue.save_custom_field_values
+      elsif logger && loger.info
+        logger.info "SupportMailHandler: ##{issue.id} not flaggable as #{flags}"
+      end
+    end
+
+    # X_ASSIGN
+    if @directives.detect { |d| d.to_s =~ X_ASSIGN }
+      user = User.find_by_login($1)
+      if issue.assignable_users.include?(user)
+        issue.assigned_to = user 
+      elsif logger && logger.info
+        logger.info "SupportMailHandler: #{user.login} not assignable to ##{issue.id}"
+      end
+    end
+  
+    # X_WATCH 
+    if @directives.detect { |d| d.to_s =~ X_WATCH }
+      user = User.find_by_login($1)
+      if issue.addable_watcher_users.include?(user)
+        issue.add_watcher(user)
+      elsif logger && logger.info
+        logger.info "SupportMailHandler: #{user.login} not addable as watcher to ##{issue.id}"
+      end
+    end
+
+    # X_COMP  
+    if @directives.detect { |d| d.to_s =~ X_COMP }
+      new_status = IssueStatus.find_by_name(@settings['comp_status']) || IssueStatus.find(:first, :conditions => ["is_closed=?", true])
+      issue.status = new_status
+    end
+    
+    issue.save!
+    return issue
   end
     
-  def create_new_ticket(email)
+  def create_new_support_issue(email)
     sender  = email.from.to_a.first.to_s.strip
     subject = email.subject
     message = cleanup_body(plain_text_body(email))
-    control = email.header[@settings[:mail_header].downcase].to_s
     uid     = genuid
 
-    issue = create_issue(email, uid)
+    issue = create_issue(email)
     newtracker = Support.new(
       :trackid => uid, 
       :email   => sender, 
@@ -82,101 +145,99 @@ class SupportMailHandler < ActionMailer::Base
       :original_mail_header => save_headers(email)
     )
     newtracker.save!
-    message_id = save_message_id email, issue.id
     
     # Send auto-reply mail to user?
     if not @settings[:auto_newreply].nil?
-      mailstatus = SupportMailer.deliver_support_issue_created(issue)
+      mailstatus = SupportMailer.deliver_support_issue_created(issue, save_headers(email))
     end
-
-    return true
-  end
-  
-  def create_issue(email,uid) 
-    user     = User.find(:first, :conditions => ["login=?", @settings['login_user']]) 
-    project  = target_project
-    tracker  = project.trackers.find_by_name(@settings['tracker']) || project.trackers.find(:first)
-    category = project.issue_categories.find(:first)
-    priority = IssuePriority.find_by_name('normal')
-    status   = IssueStatus.find_by_name('new')
-    
-    issue = Issue.new(:author => user, :project => project, :tracker => tracker, :category => category, :priority => priority)
-
-    # check workflow
-    if status && issue.new_statuses_allowed_to(user).include?(status)
-      issue.status = status
-    end
-    issue.subject = email.subject.chomp
-    if issue.subject.blank? then issue.subject = '(no subject)' end
-
-    issue.description = cleanup_body(plain_text_body(email))
-    issue.save!
-
-    add_attachments(issue,email,user)
-    logger.info "MailHandler: issue ##{issue.id} created by #{user}" if logger && logger.info
 
     return issue
   end
   
-  # Adds a note to an existing issue
-  def receive_issue_reply(issue_id,email)
+  def create_issue(email) 
+    user     = User.find_by_login(@settings['login_user']) 
+    project  = target_project
+    tracker  = project.trackers.find_by_name(@settings['tracker']) || project.trackers.find(:first)
+    priority = IssuePriority.find_by_name('normal')
+    status   = IssueStatus.find_by_name('new')
+    
+    # Create the issue
+    issue = Issue.new(
+      :author   => user, 
+      :project  => project, 
+      :tracker  => tracker, 
+      :priority => priority
+    )
+
+    # Check workflow & set status
+    if status && issue.new_statuses_allowed_to(user).include?(status)
+      issue.status = status
+    end
+    
+    # Set issue subject & description
+    issue.subject = email.subject.chomp
+    if issue.subject.blank? then issue.subject = '(no subject)' end
+    issue.description = "Submitted by #{email.from.to_s}, #{Time.now.strftime("%A %B %e %Y, %l:%M%p")}"
+    issue.save!
+
+    logger.info "MailHandler: issue ##{issue.id} created by #{user}" if logger && logger.info
+    return issue
+  end
+  
+  def update_support_issue(issue, email)
     status =  IssueStatus.find_by_name('Tildelt')
     user = User.find(:first, :conditions => ["login=?", @settings['login_user']]) 
-    
-    issue = Issue.find_by_id(issue_id)
-    if issue.nil?
-      logger.error "SupportMailHandler: unable to find issue ##{issue_id}" if logger && logger.error
-      return false
-    end
-    # check permission
-    #unless @@handler_options[:no_permission_check]
-    #  raise UnauthorizedAction unless user.allowed_to?(:add_issue_notes, issue.project) || user.allowed_to?(:edit_issues, issue.project)
-    #  raise UnauthorizedAction unless status.nil? || user.allowed_to?(:edit_issues, issue.project)
-    #end
 
     # add the note as a journal entry
     journal = issue.init_journal(user, cleanup_body(plain_text_body(email)))
-
-    # save the mail headers in the journal entry
-    header = {}
     journal.mail_header = save_headers(email)
-    journal.save
 
     # save the email message-id for tracking purposes
-    save_message_id email, issue.id
+    record_message_id(issue, email)
+    
+    # Add any attachments
+    add_attachments(issue, journal, user, email)
 
-    add_attachments(issue,email,user)
     # check workflow
     if status && issue.new_statuses_allowed_to(user).include?(status)
       issue.status = status
     end
+
+    # if the ticket was previously closed, open it for revisitation
+    if issue.status.is_closed?
+      new_status = IssueStatus.find_by_name(@settings['revisit_status']) || IssueStatus.find(:first, :conditions => ["is_closed=?", false])
+      issue.status = new_status
+    end
+
     issue.save!
+    journal.save!
     logger.info "MailHandler: issue ##{issue.id} updated by #{user}" if logger && logger.info
-    journal
+    return journal
   end
   
-  def add_attachments(obj, email, user)
+  def add_attachments(issue, journal, user, email)
     if email.has_attachments?
       email.attachments.each do |attachment|
         Attachment.create(
-          :container    => obj,
+          :container    => issue,
           :file         => attachment,
           :author       => user,
           :content_type => attachment.content_type
+        )
+        journal.details << JournalDetail.new(
+          :property => 'attachment',
+          :prop_key => attachment.id,
+          :value    => attachment.filename
         )
       end
     end
   end
   
+  # returns the working project
   def target_project
     target = Project.find_by_identifier(@project)
-    raise MissingInformation.new('Unable to determine target project') if target.nil?
-    target
-  end
-  
-  # Returns the correct subjecttype
-  def build_subject(uid, subject)
-    return "Re: " + subject
+    raise MissingInformation.new('SupportMailHandler: Unable to determine target project') if target.nil?
+    return target
   end
   
   # Returns the text/plain part of the email
@@ -209,6 +270,25 @@ class SupportMailHandler < ActionMailer::Base
     return body.strip
   end
   
+  # Extract anything that can be used as a control directive in the email.
+  # First grab the control header directives
+  # Next grab any subject line directives
+  def get_directives(email)
+    @settings ||= get_settings
+    control_field = email.header[@settings[:mail_header].downcase]
+    directives  = []
+    directives << control_field.to_s.split(';') unless control_field.nil?
+    if email.subject.to_s.match(SUBJECT_X_MATCH) 
+      directives << $1.split(';')
+    end
+    directives.flatten.compact
+  end
+
+  # Implemented thusly due to a hack. shouldn't really be needed.
+  def get_settings
+    @settings = Setting['plugin_support']
+  end
+  
   def genuid
     uid = (0..2).map{ ('A'..'Z').to_a[rand(26)] }.join + (0..2).map{ ('0'..'9').to_a[rand(10)] }.join
     while Support.find_by_trackid(uid)
@@ -225,8 +305,8 @@ class SupportMailHandler < ActionMailer::Base
     return header
   end
 
-  def save_message_id(email, issue_id)
-    message_id = MessageId.new(:message_id => email.header['message-id'].to_s, :issue_id => issue_id)
+  def record_message_id(issue, email)
+    message_id = MessageId.new(:message_id => email.header['message-id'].to_s, :issue_id => issue.id)
     message_id.save
     unless message_id.nil?
       logger.info "MailHandler: message-id #{message_id.message_id} created (issue #{message_id.issue_id}" if logger && logger.info

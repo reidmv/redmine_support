@@ -20,39 +20,33 @@ module SupportPatchIssuesController
 
     # Adds a signature to the quoted issue
     # We override this whole method because we need to inject a user
-    # signature into the reply field. 
+    # signature into the rendered reply field. 
     def reply_signature
       journal = Journal.find(params[:journal_id]) if params[:journal_id]
       support = Support.getByIssueId(@issue.id); 
 
-      # Things are different if it's a reply or a reply to a reply
-      if not journal.nil?
-        header = journal.mail_header
-        text = journal.notes
-        date = journal.created_on
-      elsif not support.nil?
-        header = support.original_mail_header
-        text = @issue.description
-        date = @issue.created_on
+      # All support issues should have journals. If no journal was given, the
+      # first journal will be a stand-in.
+      if journal.nil?
+        journals = @issue.journals
+        unless journals.nil?
+          journal = journals.sort{ |x,y| x.created_on <=> y.created_on }.first
+        end
       end
 
-      # Set the potential recpients of email
-      unless header.nil?
-        user  = header['from']
-        cc    = header['cc']
-      else
-        user = cc = refid = nil
-      end
-
-      # Set the in-reply-to and references headers
-      unless header.nil?
-        inreplyto = header['message-id']
+      # Set email headers and such based on the replyed-to journal
+      unless journal.nil?
+        text       = journal.notes
+        date       = journal.created_on
+        user       = journal.mail_header['from']
+        cc         = journal.mail_header['cc']
+        inreplyto  = journal.mail_header['message-id']
         references = ""
-        MessageId.find_all_by_issue_id(@issue.id, :order => 'id asc').each do |message|
-          references += " " +  message.message_id
+        MessageId.find_all_by_issue_id(@issue.id, :order => 'id asc').each do |mesg|
+          references += " " + mesg.message_id
         end
       else
-        references = inreplyto = support.original_mail_header['message-id']
+        text = date = user = cc = inreplyto = references = nil
       end
 
       # Replaces pre blocks with [...]

@@ -32,6 +32,9 @@ Redmine::Plugin.register :support do
     'homedir_path'   => '/u',
     'signature_file' => '.signature',
     'auto_newreply'  => 'false',
+    'comp_status'    => 'Closed',
+    'revisit_status' => 'Feedback',
+    'tags_field'     => 'Flags',
 
  }, :partial => 'settings/support_settings'
 

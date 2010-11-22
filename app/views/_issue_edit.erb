@@ -6,6 +6,9 @@
     <p><label><%= "CC:" %></label>
       <%= text_field_tag 'support_cc', cc, {:size => 60 } %><br />
     </p>
+    <p><label><%= control %></label>
+      <%= text_field_tag 'support_control', "", {:size => 60 } %><br />
+    </p>
     <%= hidden_field_tag 'support_reference' %>
     <%= hidden_field_tag 'support_inreplyto' %>
     </fieldset>

@@ -19,6 +19,15 @@
   <p><label><%= l(:support_text_login_user) %></label>
     <%= text_field_tag 'settings[login_user]', @settings['login_user'] %><br />
   </p>
+  <p><label><%= l(:support_text_tags_field) %></label>
+    <%= text_field_tag 'settings[tags_field]', @settings['tags_field'] %><br />
+  </p>
+  <p><label><%= l(:support_text_comp_status) %></label>
+    <%= text_field_tag 'settings[comp_status]', @settings['comp_status'] %><br />
+  </p>
+  <p><label><%= l(:support_text_revisit_status) %></label>
+    <%= text_field_tag 'settings[revisit_status]', @settings['revisit_status'] %><br />
+  </p>
 </fieldset>
 
 <fieldset>

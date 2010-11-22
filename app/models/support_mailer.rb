@@ -1,8 +1,7 @@
 class SupportMailer < ActionMailer::Base
 
-  def support_issue_created(issue)
+  def support_issue_created(issue, original_header)
     settings = Setting['plugin_support']
-    original_header = Support.get_by_issueid(issue.id).original_mail_headers
 
     message_id issue
     redmine_headers 'Project' => issue.project.identifier,
@@ -11,15 +10,15 @@ class SupportMailer < ActionMailer::Base
     headers['in-reply-to'] = original_header['message-id']
     headers['references']  = original_header['message-id']
     recipients original_header['from']
+    from settings['replyto']
     cc [ original_header['cc'], settings['replyto'] ].flatten.compact
     subject "Re: #{issue.subject}"
-    body :issue => issue
+    body :issueid => issue.id
     content_type "text/plain"
     body render(:file => "support.newissue.text.plain.rhtml", :body => body)
   end
 
   def support_issue_updated(journal)
-    debugger
     settings = Setting['plugin_support']
     issue    = Issue.find(journal.journalized_id)
     header   = journal.mail_header
@@ -30,10 +29,11 @@ class SupportMailer < ActionMailer::Base
     redmine_headers 'Issue-Assignee' => issue.assigned_to.login if issue.assigned_to
     headers['in-reply-to'] = header['in-reply-to']
     headers['references']  = header['references']
+    headers[settings['mail_header']] = header[settings['mail_header']]
     recipients header['to']
     from settings['replyto']
     cc [ header['cc'], settings['replyto'] ].flatten.compact
-    subject "RE: #{issue.subject}"
+    subject "Re: #{issue.subject}"
     body :status => issue.status,
          :agent => journal.user,
          :message => journal.notes
@@ -67,8 +67,8 @@ class SupportMailer < ActionMailer::Base
     rescue Exception => e
       if raise_errors
         raise e
-      elsif mylogger
-        mylogger.error "The following error occured while sending email notification: \"#{e.message}\". Check your configuration in config/email.yml."
+      elsif logger && logger.error
+        logger.error "The following error occured while sending email notification: \"#{e.message}\". Check your configuration in config/email.yml."
       end
     ensure
       self.class.raise_delivery_errors = raise_errors
