@@ -6,6 +6,7 @@ class CreateMessageIds < ActiveRecord::Migration
       t.column :message_id, :string
     end
     add_index  :message_ids, :message_id, :unique => true
+    add_index  :message_ids, :issue_id, :unique => false
   end
 
   def self.down

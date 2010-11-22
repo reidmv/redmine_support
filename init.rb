@@ -4,7 +4,7 @@ require 'support_hooks'
 require 'support_plugin/support_patch_application_helper'
 require 'support_plugin/support_patch_issues_controller'
 require 'support_plugin/support_patch_journal'
-require 'support_plugin/support_patch_mailer'
+#require 'support_plugin/support_patch_mailer'
 require 'support_plugin/support_patch_mail_handler_controller'
 
 #Dispatcher.to_prepare :tw_support do
@@ -41,19 +41,3 @@ Redmine::Plugin.register :support do
   end
 end
 
-# Herefollows an ugly hack that will make stuff work without further plugin
-# installation instructions. The basic problem is that ActionMailer will not
-# look for templates in the plugin app/views directory. There weren't a 
-# whole lot of options available and believe it or not, this was by far the
-# very very very most shiny and pretty. Please I beg of you somebody step
-# forward to prove me wrong!
-templates = []
-templates << "app/views/mailer/support.updateissue.text.plain.rhtml"
-templates << "app/views/mailer/support.newissue.text.plain.rhtml"
-templates.each do |template|
-  begin
-    File.symlink("#{SUPPORT_ROOT}/#{template}", "#{RAILS_ROOT}/#{template}")
-  rescue Exception
-    # I don't care if you failed. You are an ugly hack.
-  end
-end

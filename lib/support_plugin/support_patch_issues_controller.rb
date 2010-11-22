@@ -38,10 +38,21 @@ module SupportPatchIssuesController
 
       # Set the potential recpients of email
       unless header.nil?
-        user = header['from']
-        cc   = header['cc']
+        user  = header['from']
+        cc    = header['cc']
       else
-        user = cc = nil
+        user = cc = refid = nil
+      end
+
+      # Set the in-reply-to and references headers
+      unless header.nil?
+        inreplyto = header['message-id']
+        references = ""
+        MessageId.find_all_by_issue_id(@issue.id, :order => 'id asc').each do |message|
+          references += " " +  message.message_id
+        end
+      else
+        references = inreplyto = support.original_mail_header['message-id']
       end
 
       # Replaces pre blocks with [...]
@@ -68,6 +79,8 @@ module SupportPatchIssuesController
         page.<< "$('notes').value = \"#{escape_javascript content}\";"
         page.<< "$('support_to').value = \"#{escape_javascript user}\";"
         page.<< "$('support_cc').value = \"#{escape_javascript cc}\";"
+        page.<< "$('support_reference').value = \"#{escape_javascript references}\";"
+        page.<< "$('support_inreplyto').value = \"#{escape_javascript inreplyto}\";"
         page.show 'update'
         page << "Form.Element.focus('notes');"
         page << "Element.scrollTo('update');"

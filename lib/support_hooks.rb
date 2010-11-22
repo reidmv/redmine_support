@@ -32,13 +32,15 @@ class SupportHooks < Redmine::Hook::Listener
   def controller_issues_edit_after_save(context={})
     if Support.isSupportIssue(context[:issue].id)
       header = {}
-      header['to']   = context[:params]['support_to']
-      header['cc']   = context[:params]['support_cc']
-      header['from'] = Setting[:plugin_support][:replyto]
+      header['to']          = context[:params]['support_to']
+      header['cc']          = context[:params]['support_cc']
+      header['in-reply-to'] = context[:params]['support_inreplyto']
+      header['references']  = context[:params]['support_reference']
+      header['from']        = Setting[:plugin_support][:replyto]
       context[:journal].mail_header = header
       context[:journal].save!
       if context[:params]['support_sendmail'] == "doSend" 
-        mailstatus = Mailer.deliver_support_issue_updated(context[:journal])
+        mailstatus = SupportMailer.deliver_support_issue_updated(context[:journal])
       end
     end
   end

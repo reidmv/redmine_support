@@ -2,7 +2,7 @@ class SupportMailHandler < ActionMailer::Base
 
   class MissingInformation < StandardError; end
 
-  MESSAGE_ID_RE      = %r{^<redmine\.([a-z0-9_]+)\-(\d+)\.\d+@}
+  MESSAGE_ID_RE      = %r{^<redmine\.([a-z0-9_]+)\-(\d+)\.\d+\.\d+@}
   SUBJECT_MATCH      = %r{\[TW-#([A-Z]+[0-9]+)\]}
   AUTORESPONSE_MATCH = %r{\[AUTO-#([0-9]+)\]}
 
@@ -22,6 +22,7 @@ class SupportMailHandler < ActionMailer::Base
   end
 
   def receive(email)
+    debugger
     control = email.header[@settings[:mail_header].downcase].to_s
   
     # only receive the mail if the project has the support module enabled.
@@ -45,8 +46,13 @@ class SupportMailHandler < ActionMailer::Base
       logger.info "SupportMailHandler: duplicate submission for #{email.message_id}" if logger && logger.info
       return false 
     elsif references.detect {|h| h.to_s =~ MESSAGE_ID_RE}
-      issue_id = $2.to_i
-      receive_issue_reply(issue_id ,email)
+      object_class, object_id = $1, $2.to_i
+      issue_id = case object_class
+        when 'journal' then Journal.find(object_id).journalized_id
+        when 'issue'   then object_id
+        else nil
+      end
+      receive_issue_reply(issue_id, email)
       return true
     else
       related_message = MessageId.find_by_message_id(references, :order => "id desc", :limit => 1)
@@ -80,7 +86,7 @@ class SupportMailHandler < ActionMailer::Base
     
     # Send auto-reply mail to user?
     if not @settings[:auto_newreply].nil?
-      mailstatus = Mailer.deliver_support_issue_created(issue)
+      mailstatus = SupportMailer.deliver_support_issue_created(issue)
     end
 
     return true
@@ -115,10 +121,13 @@ class SupportMailHandler < ActionMailer::Base
   # Adds a note to an existing issue
   def receive_issue_reply(issue_id,email)
     status =  IssueStatus.find_by_name('Tildelt')
-    user = User.find(:first, :conditions => ["login=?", 'support']) 
+    user = User.find(:first, :conditions => ["login=?", @settings['login_user']]) 
     
     issue = Issue.find_by_id(issue_id)
-    return unless issue
+    if issue.nil?
+      logger.error "SupportMailHandler: unable to find issue ##{issue_id}" if logger && logger.error
+      return false
+    end
     # check permission
     #unless @@handler_options[:no_permission_check]
     #  raise UnauthorizedAction unless user.allowed_to?(:add_issue_notes, issue.project) || user.allowed_to?(:edit_issues, issue.project)
