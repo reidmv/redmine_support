@@ -54,11 +54,11 @@ class SupportHooks < Redmine::Hook::Listener
       # This next part is a hack just to keep us in line with the legacy snot
       # way of doing things. I would love to delete this next part. If you
       # are using the web gui you shouldn't be using the X-TTS field directly.
-      debugger
       context[:issue].reload
-      handler          = SupportMailHandler.new 
-      handler.project  = context[:issue].project
-      handler.process_directives(mailstatus, context[:issue])
+      handler = Object.new
+      handler.extend(SupportControlHeader::InstanceMethods)
+      directives = handler.get_directives(mailstatus)
+      handler.process_directives(context[:issue], directives)
       
     end
   end

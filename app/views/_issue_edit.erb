@@ -1,14 +1,16 @@
+  <div class="box tabular">
     <fieldset><legend>Support issue</legend>
-    <%=  check_box_tag 'support_sendmail', "doSend", true %> Send copy of this update to client
+    <p><%=  check_box_tag 'support_sendmail', "doSend", true %> Send copy of this update to client</p>
     <p><label><%= "To:" %></label>
-      <%= text_field_tag 'support_to', to, {:size => 60} %><br />
+      <%= text_field_tag 'support_to', to, {:size => 68} %><br />
     </p>
     <p><label><%= "CC:" %></label>
-      <%= text_field_tag 'support_cc', cc, {:size => 60 } %><br />
+      <%= text_field_tag 'support_cc', cc, {:size => 68 } %><br />
     </p>
     <p><label><%= control %></label>
-      <%= text_field_tag 'support_control', "", {:size => 60 } %><br />
+      <%= text_field_tag 'support_control', "", {:size => 68 } %><br />
     </p>
     <%= hidden_field_tag 'support_reference' %>
     <%= hidden_field_tag 'support_inreplyto' %>
     </fieldset>
+  </div>

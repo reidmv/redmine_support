@@ -1,4 +1,13 @@
 module SupportControlHeader
+
+  SUBJECT_X_MATCH = %r{\[([^\[\]]+)\]}
+  X_ISSUE_ID = /^\s*(\d+)($|\s+)/i
+  X_COMP     = /^\s*\d*\s*(CLOSE|RESOLVED|RESOLVE|RESOLV|CLOSED|COMP|COMPLETED|COMPLETE|DONE)($|\s+)/i
+  X_ASSIGN   = /^\s*\d*\s*RESP\s+([-a-zA-Z0-9_]+)($|\s+)/i
+  X_WATCH    = /^\s*\d*\s*GUARD\s+([-a-zA-Z0-9_]+)($|\s+)/i
+  X_FLAG     = /^\s*\d*\s*FLAGS\s+([A-Za-z0-9,]+)($|\s+)/i
+  X_IGNORE   = /^\s*\d*\s*IGNORE($|\s+)/i
+
   def self.included(base)
     base.send(:include, InstanceMethods)
   end
