@@ -14,6 +14,7 @@ module SupportControlHeader
 
   module InstanceMethods
     def get_directives(email)
+      return [] if email.nil?
       settings = Setting['plugin_support']
       control_field = email.header[settings[:mail_header].downcase]
       directives  = []

@@ -32,8 +32,16 @@ class SupportHooks < Redmine::Hook::Listener
     end    
   end
 
+  def view_issues_history_journal_top(context={})
+    journal = context[:journal]
+    if not journal.mail_header.nil?
+      get_action_view.render(:partial => "support/journal_header", :locals => {:journal => journal});
+    end 
+  end
+
   def controller_issues_edit_after_save(context={})
-    if Support.isSupportIssue(context[:issue].id)
+    send = context[:params]['support_sendmail'] == "doSend"
+    if Support.isSupportIssue(context[:issue].id) && send
       control = Setting['plugin_support']['mail_header']
       header = {}
       header['to']          = context[:params]['support_to']
@@ -47,9 +55,7 @@ class SupportHooks < Redmine::Hook::Listener
       end
       context[:journal].mail_header = header
       context[:journal].save!
-      if context[:params]['support_sendmail'] == "doSend" 
-        mailstatus = SupportMailer.deliver_support_issue_updated(context[:journal])
-      end
+      mailstatus = SupportMailer.deliver_support_issue_updated(context[:journal])
       
       # This next part is a hack just to keep us in line with the legacy snot
       # way of doing things. I would love to delete this next part. If you

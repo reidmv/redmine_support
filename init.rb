@@ -42,5 +42,8 @@ Redmine::Plugin.register :support do
     permission :disable_support_cc, { :support => :index, :supportmail => :index }, :require => :member
     permission :view_support_issue, { :supportmail => :index }, :require => :member
   end
+
+  ActionView::Helpers::AssetTagHelper.register_stylesheet_expansion :support => ["support"]
+
 end
 

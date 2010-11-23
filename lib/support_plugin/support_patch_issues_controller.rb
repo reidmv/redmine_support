@@ -27,26 +27,34 @@ module SupportPatchIssuesController
 
       # All support issues should have journals. If no journal was given, the
       # first journal will be a stand-in.
-      if journal.nil?
+      if journal.nil? or journal.mail_header.nil?
         journals = @issue.journals
-        unless journals.nil?
+        if journal.nil? and not journals.nil?
           journal = journals.sort{ |x,y| x.created_on <=> y.created_on }.first
         end
       end
 
       # Set email headers and such based on the replyed-to journal
-      unless journal.nil?
+      if journal.nil?
+        text = date = user = cc = inreplyto = references = nil
+      elsif journal.mail_header.nil?
+        first_journal = journals.sort{ |x,y| x.created_on <=> y.created_on }.first
+        text       = journal.notes
+        date       = journal.created_on
+        user       = first_journal.mail_header['from']
+        cc         = first_journal.mail_header['cc']
+        inreplyto  = first_journal.mail_header['message-id']
+      else
         text       = journal.notes
         date       = journal.created_on
         user       = journal.mail_header['from']
         cc         = journal.mail_header['cc']
         inreplyto  = journal.mail_header['message-id']
-        references = ""
-        MessageId.find_all_by_issue_id(@issue.id, :order => 'id asc').each do |mesg|
-          references += " " + mesg.message_id
-        end
-      else
-        text = date = user = cc = inreplyto = references = nil
+      end 
+
+      references = ""
+      MessageId.find_all_by_issue_id(@issue.id, :order => 'id asc').each do |mesg|
+        references += " " + mesg.message_id
       end
 
       # Replaces pre blocks with [...]

@@ -60,7 +60,22 @@ class SupportMailHandler < ActionMailer::Base
       issue = nil
     elsif @directives.detect { |d| d.to_s =~ X_ISSUE_ID }
       issue_id = $1
-      issue = Issue.find(issue_id)
+      begin
+        issue = Issue.find(issue_id)
+      rescue ActiveRecord::RecordNotFound
+        # What I think we should be doing but aren't to support legacy system
+        # TODO: enable this when the legacy system is no more
+        #email.delete(@settings['mail_header'])
+        #get_directives(email)
+        #return determine_issue(email)  
+        # What we do instead
+        issue = create_new_support_issue(email)
+      end
+      if not Support.isSupportIssue(issue.id)
+        email.delete(@settings['mail_header'])
+        get_directives(email)
+        return determine_issue(email)  
+      end
     elsif references.detect {|h| h.to_s =~ MESSAGE_ID_RE}
       object_class, object_id = $1, $2.to_i
       issue_id = case object_class
@@ -116,6 +131,13 @@ class SupportMailHandler < ActionMailer::Base
       :tracker  => tracker, 
       :priority => priority
     )
+
+    # Hack for the legacy system
+    # TODO: remove it (and the legacy system)
+    @directives ||= get_directives(email)
+    if @directives.detect { |d| d.to_s =~ X_ISSUE_ID }   
+      issue.id = $1
+    end
 
     # Check workflow & set status
     if status && issue.new_statuses_allowed_to(user).include?(status)

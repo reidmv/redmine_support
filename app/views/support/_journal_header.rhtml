@@ -1,0 +1,13 @@
+<% to   = journal.mail_header['to']   %>
+<% cc   = journal.mail_header['cc']   %>
+<% from = journal.mail_header['from'] %>
+<% subject = journal.mail_header['subject'] %>
+
+<%# Don't know how to include a stylesheet using only a partial %>
+<%# so just hard-coding style for now.                          %>
+<div class="box" style="background: #EEE;">
+  <%= "To: " + h(to) + "<br />" unless to.nil? or to.empty?  %>
+  <%= "CC: " + h(cc) + "<br />" unless cc.nil? or cc.empty?  %>
+  <%= "From: " + h(from) + "<br />" unless from.nil? or from.empty? %>
+  <%= "Subject: " + h(subject) + "<br />" unless  subject.nil? or subject.empty? %>
+</div>
