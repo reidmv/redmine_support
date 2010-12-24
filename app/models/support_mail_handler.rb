@@ -1,5 +1,5 @@
 class SupportMailHandler < ActionMailer::Base
-
+  include ActionView::Helpers::SanitizeHelper
   include SupportControlHeader
 
   class MissingInformation < StandardError; end
@@ -32,7 +32,7 @@ class SupportMailHandler < ActionMailer::Base
     # If this email has already been processed, discard it.
     if not MessageId.find_by_message_id(email.message_id).nil?
       logger.info "SupportMailHandler: duplicate submission for #{email.message_id}" if logger && logger.info
-      return false
+      return true # we don't want to generate bounces for this
     end
      
     # Determine the issue id for the email
@@ -56,6 +56,7 @@ class SupportMailHandler < ActionMailer::Base
     # Else, if there's a formatted message-id, use that to determine the issue
     # Else, try and use the referenced messages to determine the issue
     # Else, throw in the towel and create a new issue.
+    # (uses methods, constants from SupportControlHeader module)
     if @directives.detect { |d| d.to_s =~ X_IGNORE }
       issue = nil
     elsif @directives.detect { |d| d.to_s =~ X_ISSUE_ID }
@@ -197,7 +198,7 @@ class SupportMailHandler < ActionMailer::Base
         journal.details << JournalDetail.new(
           :property => 'attachment',
           :prop_key => attachment.id,
-          :value    => attachment.filename
+          :value    => attachment.original_filename
         )
       end
     end
@@ -221,7 +222,7 @@ class SupportMailHandler < ActionMailer::Base
     if plain_text_part.nil?
       # no text/plain part found, assuming html-only email
       # strip html tags and remove doctype directive
-      plain_text_body = strip_tags(@email.body.to_s)
+      plain_text_body = strip_tags(email.body.to_s)
       plain_text_body.gsub! %r{^<!DOCTYPE .*$}, ''
     else
       plain_text_body = plain_text_part.body.to_s
@@ -238,6 +239,10 @@ class SupportMailHandler < ActionMailer::Base
       body = body.gsub(regex, '')
     end
     return body.strip
+  end
+
+  def self.full_sanitizer
+    @full_sanitizer ||= HTML::FullSanitizer.new
   end
   
   def genuid

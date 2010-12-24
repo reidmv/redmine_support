@@ -42,20 +42,22 @@ class SupportHooks < Redmine::Hook::Listener
   def controller_issues_edit_after_save(context={})
     send = context[:params]['support_sendmail'] == "doSend"
     if Support.isSupportIssue(context[:issue].id) && send
-      control = Setting['plugin_support']['mail_header']
-      header = {}
-      header['to']          = context[:params]['support_to']
-      header['cc']          = context[:params]['support_cc']
-      header['in-reply-to'] = context[:params]['support_inreplyto']
-      header['references']  = context[:params]['support_reference']
-      header['from']        = Setting[:plugin_support][:replyto]
-      header[control]       = context[:params]['support_control']
-      if not header[control].match(/^#{context[:issue].id}(\s|$)/)
-        header[control] = context[:issue].id.to_s + " " + header[control]
+      unless context[:journal].notes.empty? or not context[:params]['support_control'].empty?
+        control = Setting['plugin_support']['mail_header']
+        header = {}
+        header['to']          = context[:params]['support_to']
+        header['cc']          = context[:params]['support_cc']
+        header['in-reply-to'] = context[:params]['support_inreplyto']
+        header['references']  = context[:params]['support_reference']
+        header['from']        = Setting[:plugin_support][:replyto]
+        header[control]       = context[:params]['support_control']
+        if not header[control].match(/^#{context[:issue].id}(\s|$)/)
+          header[control] = context[:issue].id.to_s + " " + header[control]
+        end
+        context[:journal].mail_header = header
+        context[:journal].save!
+        mailstatus = SupportMailer.deliver_support_issue_updated(context[:journal])
       end
-      context[:journal].mail_header = header
-      context[:journal].save!
-      mailstatus = SupportMailer.deliver_support_issue_updated(context[:journal])
       
       # This next part is a hack just to keep us in line with the legacy snot
       # way of doing things. I would love to delete this next part. If you
